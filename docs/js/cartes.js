@@ -96,6 +96,31 @@ function injecterDefs() {
       <path d="M50 46 L50 56 Q50 60 44 60"/><path d="M66 42 Q78 50 74 58 Q70 62 64 58"/>
     </g>
     <circle cx="50" cy="30" r="11" fill="currentColor"/><circle cx="50" cy="30" r="4" fill="#16323a"/></symbol>`;
+  // Obstacles et joker
+  d += `<symbol id="cadenas" viewBox="0 0 40 48">
+    <path d="M11 22 V14 a9 9 0 0 1 18 0 V22" fill="none" stroke="#2a1d0e" stroke-width="9" stroke-linecap="round"/>
+    <path d="M11 22 V14 a9 9 0 0 1 18 0 V22" fill="none" stroke="#d9dde2" stroke-width="5" stroke-linecap="round"/>
+    <rect x="4" y="21" width="32" height="25" rx="5" fill="#e0a526" stroke="#2a1d0e" stroke-width="3"/>
+    <circle cx="20" cy="31" r="4" fill="#2a1d0e"/><rect x="18.3" y="32" width="3.4" height="8" rx="1.5" fill="#2a1d0e"/></symbol>
+  <symbol id="cle" viewBox="0 0 60 30">
+    <g fill="none" stroke="#2a1d0e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="14" cy="15" r="8"/><path d="M22 15 H54 M45 15 V24 M53 15 V22"/></g>
+    <g fill="none" stroke="#f2c230" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="14" cy="15" r="8"/><path d="M22 15 H54 M45 15 V24 M53 15 V22"/></g></symbol>
+  <symbol id="chaine" viewBox="0 0 120 40">
+    <g fill="none" stroke-linecap="round">
+      <g stroke="#2a1d0e" stroke-width="11"><ellipse cx="22" cy="20" rx="17" ry="9"/><ellipse cx="50" cy="20" rx="17" ry="9"/>
+        <ellipse cx="78" cy="20" rx="17" ry="9"/><ellipse cx="102" cy="20" rx="14" ry="9"/></g>
+      <g stroke="#c9d0d8" stroke-width="6"><ellipse cx="22" cy="20" rx="17" ry="9"/><ellipse cx="50" cy="20" rx="17" ry="9"/>
+        <ellipse cx="78" cy="20" rx="17" ry="9"/><ellipse cx="102" cy="20" rx="14" ry="9"/></g></g></symbol>
+  <symbol id="scarabee" viewBox="0 0 100 100">
+    <g stroke="#2a1d0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+      <path d="M50 8 L58 20 L42 20 Z" fill="#c8932a"/>
+      <ellipse cx="50" cy="58" rx="27" ry="32" fill="#1d6f7a"/>
+      <path d="M50 28 V90" fill="none"/>
+      <path d="M26 44 Q8 36 6 18 Q24 24 32 38 M74 44 Q92 36 94 18 Q76 24 68 38" fill="#e0a526"/>
+      <path d="M24 66 Q8 70 6 86 Q22 84 30 74 M76 66 Q92 70 94 86 Q78 84 70 74" fill="#e0a526"/>
+      <circle cx="50" cy="20" r="9" fill="#c8932a"/></g></symbol>`;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('id', 'defs-cartes');
   svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
@@ -108,6 +133,13 @@ function injecterDefs() {
 // Une face de carte. c = { valeur, couleur, rang }, w = largeur en pixels (facultatif)
 function elCarte(c, w) {
   const d = document.createElement('div');
+  if (c.valeur === 0) {   // le joker
+    d.className = 'card face joker';
+    if (w) d.style.setProperty('--w', w + 'px');
+    d.innerHTML = '<span class="corner tl">★</span><div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="Joker"><use href="#scarabee"/></svg></div>' +
+                  '<span class="mot">JOKER</span><span class="corner br">★</span>';
+    return d;
+  }
   d.className = 'card face' + (COULEURS[c.couleur].rouge ? ' red' : '') + (c.valeur >= 11 ? ' fig' : '');
   if (w) d.style.setProperty('--w', w + 'px');
   const s = COULEURS[c.couleur].sym, r = RANGS[c.valeur - 1];
@@ -126,4 +158,14 @@ function elDos(w) {
   if (w) d.style.setProperty('--w', w + 'px');
   d.innerHTML = '<svg viewBox="0 0 100 60"><use href="#oeil"/></svg>';
   return d;
+}
+
+
+// Petites icônes posées par-dessus une carte du tableau : 'chaine' | 'cadenas' | 'cle'
+function elIcone(nom) {
+  const e = document.createElement('div');
+  e.className = 'ico ' + nom;
+  const vb = { chaine: '0 0 120 40', cadenas: '0 0 40 48', cle: '0 0 60 30' }[nom];
+  e.innerHTML = `<svg viewBox="${vb}" aria-hidden="true"><use href="#${nom}"/></svg>`;
+  return e;
 }

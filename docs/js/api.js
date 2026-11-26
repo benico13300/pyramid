@@ -58,6 +58,8 @@ const API = (() => {
       sommets: partie.sommets,
       gagne: partie.etat === 'gagne',
       graine: partie.graine,
+      niveau: partie.niveau,
+      difficulte: partie.difficulte,
       date: new Date().toISOString()
     };
   }
@@ -113,5 +115,9 @@ const API = (() => {
     return stock.lire('tp_scores', []).reduce((m, l) => Math.max(m, l.score), 0);
   }
 
-  return { sauver, envoyerFile, classement, pseudo, record, idJoueur };
+  // Réglages mémorisés sur l'appareil : niveau en cours, niveau max atteint, difficulté
+  const reglage = (cle, defaut) => stock.lire('tp_' + cle, defaut);
+  const regler = (cle, valeur) => stock.ecrire('tp_' + cle, valeur);
+
+  return { sauver, envoyerFile, classement, pseudo, record, idJoueur, reglage, regler };
 })();

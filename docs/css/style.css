@@ -43,6 +43,24 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
   box-shadow:0 2px 4px #0009, inset 0 0 0 2px var(--or), inset 0 0 0 5px var(--nuit), inset 0 0 0 6px #c8932a99}
 .dos svg{position:absolute;inset:22% 12%;width:76%;height:56%;color:var(--or)}
 
+/* ---------- joker, obstacles ---------- */
+.joker{background:linear-gradient(160deg,#fff1c2,#f0c860 55%,#e0a526);color:#4a2c00}
+.joker .art{top:46%;left:12%;right:12%}
+.mot{position:absolute;left:0;right:0;bottom:.5em;text-align:center;font-weight:700;font-size:.55em;letter-spacing:.12em}
+.ico{position:absolute;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
+.ico svg{display:block;width:100%;height:auto}
+.ico.chaine{left:-6%;right:-6%;top:36%;transform:rotate(-14deg)}
+.ico.cadenas{width:36%;left:32%;top:26%}
+.ico.cle{width:58%;left:8%;top:40%;transform:rotate(-28deg)}
+.t.bloquee .corner,.t.bloquee .mid,.t.bloquee .art{opacity:.55}
+
+/* ---------- niveau, état ---------- */
+.niveau{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 4px 6px;font-size:.85rem}
+.niveau b{color:var(--or)}
+.etat{margin:0 2px 8px;font-size:.78rem;opacity:.85;text-align:center;line-height:1.4}
+.msg{min-height:1.3em;margin:6px 4px 0;font-size:.85rem;text-align:center;color:#ffe08a}
+select{font:inherit;font-size:.88rem;padding:4px 8px;border-radius:999px;border:1px solid #c8932a88;background:#0b1a17;color:#f6ecd0}
+
 /* ---------- cartes du tableau ---------- */
 .t{position:absolute;cursor:pointer}
 .t.jouable{box-shadow:0 0 0 2px #ffe27a, 0 0 10px 2px #ffd54a}
@@ -80,3 +98,5 @@ button:disabled{opacity:.4;cursor:default}
 .top li{display:flex;justify-content:space-between;gap:10px;padding:5px 8px;border-bottom:1px dashed #c8932a33}
 .top b{color:#ffe08a}
 .gros-bouton{width:100%;padding:12px;font-size:1.05rem;background:var(--or);color:#2a1d0e;font-weight:700}
+
+.lien{width:100%;margin-top:8px;border:0;font-size:.9rem;text-decoration:underline;opacity:.85}

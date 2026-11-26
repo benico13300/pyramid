@@ -18,7 +18,12 @@
       <div><span>Pioche</span><b id="pi">0</b></div>
       <div><span>Record</span><b id="re">0</b></div>
     </div>
+    <div class="niveau">
+      <span>Niveau <b id="niv">1</b></span>
+      <span id="etat"></span>
+    </div>
     <div class="cadre"><div class="plateau" id="plateau"></div></div>
+    <p id="msg" class="msg" aria-live="polite"></p>
     <div class="base">
       <button id="pioche" class="pile" aria-label="Piocher une carte"></button>
       <div id="actif" class="pile" aria-label="Carte active"></div>
@@ -30,10 +35,18 @@
     <div class="options">
       <label><input type="checkbox" id="optBoucle" checked> Bouclage As ↔ Roi</label>
       <label><input type="checkbox" id="optAide" checked> Surligner les coups</label>
+      <label>Difficulté <select id="optDiff">
+        <option value="simple">Simple (chaînes : 2)</option>
+        <option value="moyen">Moyen (chaînes : 4)</option>
+        <option value="difficile">Difficile (chaînes : 6)</option></select></label>
+      <label>Niveau <select id="optNiveau"></select></label>
     </div>
     <p class="regle">Joue une carte libre <b>juste au-dessus ou en dessous</b> de la carte active.
       Série = cartes jouées d'affilée sans piocher : chaque carte rapporte 100 × la série,
-      +500 par sommet dégagé, +100 par carte restant en pioche si tu gagnes.</p>
+      +500 par sommet dégagé, +100 par carte restant en pioche si tu gagnes.<br>
+      <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
+      <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
+      <b>★ Joker</b> : il se joue sur n'importe quelle carte. Vide les 3 sommets pour passer au niveau suivant.</p>
     <div id="voile" class="voile" hidden></div>`;
 
   const $ = id => document.getElementById(id);
@@ -41,6 +54,18 @@
   let partie = null;
   let aide = true;
   let bouclage = true;
+  let niveau = Math.max(1, Number(API.reglage('niveau', 1)) || 1);
+  let difficulte = API.reglage('diff', 'simple');
+  if (!DIFFICULTES[difficulte]) difficulte = 'simple';
+
+  function message(texte) { $('msg').textContent = texte || ''; }
+
+  function remplirNiveaux() {
+    const max = Math.max(Number(API.reglage('niveau_max', 1)) || 1, niveau);
+    $('optNiveau').replaceChildren(...Array.from({ length: max }, (_, i) =>
+      Object.assign(document.createElement('option'), { value: i + 1, textContent: i + 1 })));
+    $('optNiveau').value = niveau;
+  }
 
   // ----- mesures : 10 colonnes + 1 carte de large -----
   function mesurer() {
@@ -64,6 +89,10 @@
       el.style.top = (c.rangee * 0.5 * h) + 'px';
       el.dataset.id = c.id;
       if (visible && aide && partie.jouable(c.id)) el.classList.add('jouable');
+      if (c.cadenas) el.appendChild(elIcone('cadenas'));
+      if (c.cle && visible) el.appendChild(elIcone('cle'));
+      if (c.chaine) el.appendChild(elIcone('chaine'));
+      if (visible && partie.blocage(c.id)) el.classList.add('bloquee');
       plateau.appendChild(el);
     }
 
@@ -86,6 +115,11 @@
     $('se').textContent = partie.serie;
     $('pi').textContent = partie.pioche.length;
     $('re').textContent = Math.max(API.record(), partie.score);
+    $('niv').textContent = partie.niveau;
+    const e = [];
+    if (partie.config.chaines) e.push(partie.chainesActives ? `🔗 série ${partie.serie}/${partie.longueurChaine}` : '🔗 brisées');
+    if (partie.config.cadenas) e.push(`🔒 ${partie.nbCadenas} · 🗝 ${partie.cles}`);
+    $('etat').textContent = e.join('   ');
     $('annuler').disabled = partie.etat !== 'en_cours' || partie.historique.length === 0;
   }
 
@@ -100,12 +134,27 @@
     if (!el || partie.etat !== 'en_cours') return;
     const id = Number(el.dataset.id);
     if (!partie.exposee(id)) return;
-    if (partie.jouer(id)) apres(true);
-    else { el.classList.add('non'); setTimeout(() => el.classList.remove('non'), 320); }
+    const bloc = partie.blocage(id);
+    const r = partie.jouer(id);
+    if (r) {
+      const ev = [];
+      if (r.cleRamassee) ev.push('🗝 Clé ramassée !');
+      if (r.cadenasOuvert) ev.push('🔓 Cadenas ouvert !');
+      if (r.chainesBrisees) ev.push('💥 Les chaînes sont brisées !');
+      message(ev.join(' '));
+      apres(true);
+    } else {
+      if (bloc === 'chaine') message(`🔗 Chaîne : enchaîne ${partie.longueurChaine} cartes d'affilée (série : ${partie.serie}).`);
+      else if (bloc === 'cadenas') message('🔒 Il faut une clé 🗝 : ramasse-en une sur une autre carte.');
+      el.classList.add('non'); setTimeout(() => el.classList.remove('non'), 320);
+    }
   });
 
-  $('pioche').addEventListener('click', () => { if (partie.piocher()) apres(true); });
-  $('annuler').addEventListener('click', () => { if (partie.annuler()) dessiner(false); });
+  $('pioche').addEventListener('click', () => { if (partie.piocher()) { message(''); apres(true); } });
+  $('annuler').addEventListener('click', () => { if (partie.annuler()) { message(''); dessiner(false); } });
+  $('optDiff').value = difficulte;
+  $('optDiff').addEventListener('change', e => { difficulte = e.target.value; API.regler('diff', difficulte); nouvelle(); });
+  $('optNiveau').addEventListener('change', e => { niveau = Number(e.target.value); API.regler('niveau', niveau); nouvelle(); });
   $('nouvelle').addEventListener('click', nouvelle);
   $('optBoucle').addEventListener('change', e => { bouclage = e.target.checked; partie.bouclage = bouclage; dessiner(false); });
   $('optAide').addEventListener('change', e => { aide = e.target.checked; dessiner(false); });
@@ -115,7 +164,9 @@
 
   function nouvelle() {
     $('voile').hidden = true;
-    partie = new Partie({ bouclage });
+    remplirNiveaux();
+    partie = new Partie({ bouclage, niveau, difficulte });
+    message(descriptionNiveau(niveau, difficulte));
     dessiner(false);
     if (partie.etat !== 'en_cours') terminer();
   }
@@ -127,14 +178,22 @@
     voile.hidden = false;
     voile.innerHTML = `
       <div class="boite" role="dialog" aria-modal="true">
-        <h2>${gagne ? '🏆 Bravo, les 3 sommets sont dégagés !' : 'Plus de coups possibles'}</h2>
+        <h2>${gagne ? `🏆 Niveau ${partie.niveau} réussi !` : `Niveau ${partie.niveau} : plus de coups possibles`}</h2>
         <p class="gros">${partie.score} points</p>
         <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/3${gagne ? ' · Bonus pioche : ' + partie.bonusFinal : ''}</p>
         <p id="etatSauv" class="detail">Enregistrement…</p>
         <ol id="top" class="top"></ol>
-        <button id="rejouer" class="gros-bouton">Rejouer</button>
+        <button id="rejouer" class="gros-bouton">${gagne ? `Niveau ${partie.niveau + 1} ➜` : `Réessayer le niveau ${partie.niveau}`}</button>
+        ${!gagne && partie.niveau > 1 ? '<button id="debut" class="lien">Recommencer au niveau 1</button>' : ''}
       </div>`;
+    if (gagne) {   // le niveau suivant est débloqué et mémorisé tout de suite
+      niveau = partie.niveau + 1;
+      API.regler('niveau', niveau);
+      API.regler('niveau_max', Math.max(Number(API.reglage('niveau_max', 1)) || 1, niveau));
+    }
     $('rejouer').addEventListener('click', nouvelle);
+    const debut = $('debut');
+    if (debut) debut.addEventListener('click', () => { niveau = 1; API.regler('niveau', 1); nouvelle(); });
 
     const res = await API.sauver(partie);
     $('etatSauv').textContent = {
