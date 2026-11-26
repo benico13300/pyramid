@@ -119,3 +119,8 @@ button:disabled{opacity:.4;cursor:default}
 .face.bonus-vert{background:linear-gradient(160deg,#d6f5cc,#7fd36b 60%,#3fae45);box-shadow:0 2px 4px #0009, inset 0 0 0 1px #1f7a2c}
 
 .gros-bouton.secondaire{background:none;color:var(--or);border:1px solid #c8932a99;margin-top:8px}
+
+.temps{margin-left:.5em;opacity:.85;font-size:.85em}
+.bonus{list-style:none;margin:6px 0 4px;padding:0;font-size:.88rem}
+.bonus li{display:flex;justify-content:space-between;padding:2px 6px;border-bottom:1px dotted #c8932a44}
+.bonus b{color:#ffe08a}

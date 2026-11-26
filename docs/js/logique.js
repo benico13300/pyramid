@@ -60,7 +60,10 @@ const RANGEES = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ];
 
-const POINTS = { carte: 100, sommet: 500, pioche: 100 };
+// Points : une carte vaut 100 × la série, un sommet +500.
+// À la victoire : bonus par joker et par carte restant en pioche, et bonus de temps
+// (TEMPS_POINTS points par seconde gagnée sous TEMPS_REF secondes).
+const POINTS = { carte: 100, sommet: 500, pioche: 50, joker: 300, tempsParSeconde: 5, tempsRef: 600 };
 
 // 5 niveaux de difficulté. Plus on monte : plus de chaînes et de cadenas, une série plus longue
 // à enchaîner pour briser les chaînes, et moins de jokers et de cartes bonus (bleues / vertes).
@@ -92,7 +95,8 @@ const NB_CARTES_PACK = 5;                     // cartes ajoutées à la pioche p
 class Partie {
   constructor(options = {}) {
     this.graine = options.graine ?? Math.floor(Math.random() * 2147483647);
-    this.bouclage = options.bouclage ?? true;
+    this.bouclage = options.bouclage ?? true;   // As ↔ Roi : toujours actif dans le jeu
+    this.horloge = options.horloge || (() => 0); // donne le temps de jeu écoulé en secondes
     this.config = configNiveau(options.niveau ?? 1);
     this.niveau = Math.min(NB_NIVEAUX, Math.max(1, Math.floor(options.niveau ?? 1) || 1));
     // Ancien nom (3 paliers) gardé pour la feuille Google : niveaux 1-2 simple, 3-4 moyen, 5 difficile
@@ -126,6 +130,9 @@ class Partie {
     this.sommets = 0;
     this.nbCoups = 0;
     this.bonusFinal = 0;
+    this.bonusPioche = 0; this.bonusJokers = 0; this.bonusTemps = 0;
+    this.pointsJeu = 0;                      // points avant les bonus de fin
+    this.temps = 0;                          // temps de jeu en secondes, fixé à la fin
     this.cles = 0;                           // clés ramassées et pas encore utilisées
     this.reserve = null;                     // une carte mise de côté (une seule à la fois)
     this.jokers = 1;                         // joker de départ, à gauche de la pioche
@@ -337,12 +344,19 @@ class Partie {
   _verifierFin() {
     if (this.cases.every(c => c.enlevee)) {
       this.etat = 'gagne';
-      this.bonusFinal = POINTS.pioche * this.pioche.length;
+      this.temps = this.horloge();
+      this.pointsJeu = this.score;
+      this.bonusPioche = POINTS.pioche * this.pioche.length;
+      this.bonusJokers = POINTS.joker * this.jokers;
+      this.bonusTemps = POINTS.tempsParSeconde * Math.max(0, POINTS.tempsRef - this.temps);
+      this.bonusFinal = this.bonusPioche + this.bonusJokers + this.bonusTemps;
       this.score += this.bonusFinal;
     } else if (this.pioche.length === 0 && !this.cases.some(c => this._peutJouer(c.id)) &&
                !(this.reserve && this.cases.some(c => this._peutJouer(c.id, this.reserve))) &&
                !(this.jokers > 0 && this.cases.some(c => this._peutJouer(c.id, new Carte(0, 'joker'))))) {
       this.etat = 'perdu';
+      this.temps = this.horloge();
+      this.pointsJeu = this.score;
     } else {
       this.etat = 'en_cours';
     }

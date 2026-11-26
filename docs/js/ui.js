@@ -19,7 +19,7 @@
       <div><span>Record</span><b id="re">0</b></div>
     </div>
     <div class="niveau">
-      <span>Niveau <b id="niv">1</b></span>
+      <span>Niveau <b id="niv">1</b> <span id="temps" class="temps"></span></span>
       <span id="etat"></span>
     </div>
     <div class="cadre"><div class="plateau" id="plateau"></div></div>
@@ -35,7 +35,6 @@
       <button id="nouvelle">⟳ Nouvelle partie</button>
     </div>
     <div class="options">
-      <label><input type="checkbox" id="optBoucle" checked> Bouclage As ↔ Roi</label>
       <label><input type="checkbox" id="optAide"> Surligner les coups</label>
       <label>Niveau <select id="optNiveau"></select></label>
     </div>
@@ -46,7 +45,7 @@
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
       <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte et compte comme une carte dans la série.
-      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour gagner. Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
+      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour gagner : il te reste des bonus pour chaque joker, chaque carte de pioche et le temps gagné (moins de 10 minutes). Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
     <div id="voile" class="voile" hidden></div>`;
 
   const $ = id => document.getElementById(id);
@@ -54,8 +53,19 @@
   let partie = null;
   const TP = 72;                              // largeur des cartes des piles
   let aide = false;                           // « Surligner les coups » est désactivé par défaut
-  let bouclage = true;
   let niveau = Math.min(NB_NIVEAUX, Math.max(1, Number(API.reglage('niveau', 1)) || 1));
+
+  // Chronomètre : il tourne tant que la partie est en cours et que l'écran est visible
+  let ecoule = 0, repris = null, tic = null;
+  function tempsEcoule() { return (ecoule + (repris === null ? 0 : performance.now() - repris)) / 1000; }
+  function formatTemps(s) { s = Math.round(s); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }
+  function afficherTemps() { $('temps').textContent = '⏱ ' + formatTemps(tempsEcoule()); }
+  function demarrerChrono() { ecoule = 0; repris = performance.now(); clearInterval(tic); tic = setInterval(afficherTemps, 1000); afficherTemps(); }
+  function arreterChrono() { if (repris !== null) { ecoule += performance.now() - repris; repris = null; } clearInterval(tic); afficherTemps(); }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (repris !== null) { ecoule += performance.now() - repris; repris = null; } }
+    else if (partie && partie.etat === 'en_cours') repris = performance.now();
+  });
 
   function message(texte) { $('msg').textContent = texte || ''; }
 
@@ -150,7 +160,7 @@
   // ----- actions -----
   function apres(animer) {
     dessiner(animer);
-    if (partie.etat !== 'en_cours') terminer();
+    if (partie.etat !== 'en_cours') { arreterChrono(); terminer(); }
   }
 
   plateau.addEventListener('click', e => {
@@ -195,7 +205,6 @@
   });
   $('optNiveau').addEventListener('change', e => { niveau = Number(e.target.value); API.regler('niveau', niveau); nouvelle(); });
   $('nouvelle').addEventListener('click', () => nouvelle());
-  $('optBoucle').addEventListener('change', e => { bouclage = e.target.checked; partie.bouclage = bouclage; dessiner(false); });
   $('optAide').addEventListener('change', e => { aide = e.target.checked; dessiner(false); });
   $('pseudo').value = (API.pseudo() === 'Joueur' ? '' : API.pseudo());
   $('pseudo').addEventListener('change', e => API.pseudo(e.target.value));
@@ -204,13 +213,15 @@
   function nouvelle(graine) {   // graine donnée = on rejoue exactement la même donne
     $('voile').hidden = true;
     remplirNiveaux();
-    partie = new Partie({ graine: typeof graine === 'number' ? graine : undefined, bouclage, niveau });
+    partie = new Partie({ graine: typeof graine === 'number' ? graine : undefined, niveau, horloge: () => Math.round(tempsEcoule()) });
+    demarrerChrono();
     message(descriptionNiveau(niveau));
     dessiner(false);
     if (partie.etat !== 'en_cours') terminer();
   }
 
   // ----- fin de partie : sauvegarde + classement -----
+  let dernierFin = 0;   // évite qu'un enregistrement lent mette à jour l'écran d'une autre partie
   async function terminer() {
     const gagne = partie.etat === 'gagne';
     const voile = $('voile');
@@ -219,7 +230,13 @@
       <div class="boite" role="dialog" aria-modal="true">
         <h2>${gagne ? `🏆 Niveau ${partie.niveau} réussi !` : `Niveau ${partie.niveau} : plus de coups possibles`}</h2>
         <p class="gros">${partie.score} points</p>
-        <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/3${gagne ? ' · Bonus pioche : ' + partie.bonusFinal : ''}</p>
+        <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/3 · Temps : ${formatTemps(partie.temps)}</p>
+        ${gagne ? `<ul class="bonus">
+          <li><span>Points de jeu</span><b>${partie.pointsJeu}</b></li>
+          <li><span>Jokers restants (${partie.jokers})</span><b>+${partie.bonusJokers}</b></li>
+          <li><span>Cartes en pioche (${partie.pioche.length})</span><b>+${partie.bonusPioche}</b></li>
+          <li><span>Temps (${formatTemps(partie.temps)})</span><b>+${partie.bonusTemps}</b></li>
+        </ul>` : ''}
         <p id="etatSauv" class="detail">Enregistrement…</p>
         <ol id="top" class="top"></ol>
         ${gagne
@@ -228,6 +245,7 @@
              <button id="rejouer" class="gros-bouton secondaire">Nouvelle partie (niveau ${partie.niveau})</button>`}
       </div>`;
     const graineJouee = partie.graine;
+    const jeton = ++dernierFin;
     if (gagne) {   // le niveau suivant est débloqué et mémorisé tout de suite
       niveau = Math.min(NB_NIVEAUX, partie.niveau + 1);
       API.regler('niveau', niveau);
@@ -237,6 +255,7 @@
     if (meme) meme.addEventListener('click', () => nouvelle(graineJouee));
 
     const res = await API.sauver(partie);
+    if (jeton !== dernierFin || voile.hidden) return;   // une autre partie a été lancée : l'envoi est fait, on ne touche plus à l'écran
     $('etatSauv').textContent = {
       en_ligne: '✓ Score enregistré dans Google Sheets',
       local: '✓ Score enregistré sur cet appareil',
@@ -245,7 +264,7 @@
 
     const cl = await API.classement();
     const ol = $('top');
-    if (!ol) return;
+    if (!ol || jeton !== dernierFin || voile.hidden) return;
     ol.before(Object.assign(document.createElement('p'), {
       className: 'detail',
       textContent: cl.mode === 'en_ligne' ? 'Classement (en ligne)' : 'Tes meilleurs scores'

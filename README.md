@@ -43,3 +43,12 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 - Plus on monte, plus il y a de chaînes et de cadenas, et la série pour briser les chaînes est de 2 cartes au niveau 1 puis de 3 cartes aux niveaux suivants, avec de moins en moins de jokers et de cartes bonus. Le niveau 5 (Expert) n'a plus de carte verte ni de joker sur le tableau.
 - Quand tu perds, tu peux rejouer exactement la même partie (même donne, mêmes obstacles).
 - Mise à jour : remplacer les fichiers de `docs/`, sans écraser `docs/js/config.js` (il contient ton adresse `/exec`).
+
+
+## Score et bonus de fin de partie
+
+- Points de jeu : cartes, sommets, séries (affichés pendant la partie).
+- Victoire uniquement : +300 par joker restant, +50 par carte restante dans la pioche, +5 points par seconde gagnée sous 10 minutes (max 3000).
+- Le chrono démarre avec la partie et se met en pause quand la page est masquée.
+- L'enregistrement ne bloque pas le bouton « Rejouer » : le score est d'abord placé dans une file locale puis envoyé ; rien n'est perdu si une nouvelle partie démarre.
+- Le Sheet reçoit deux colonnes en plus : `temps_s` et `points_jeu`. Après avoir mis à jour `Code.gs`, faire « Déployer > Gérer les déploiements > Nouvelle version ».

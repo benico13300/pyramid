@@ -42,10 +42,14 @@ const API = (() => {
   // POST en "text/plain" (la valeur par défaut avec une chaîne) : évite la
   // pré-vérification CORS, que les web apps Apps Script ne savent pas gérer.
   async function poster(corps) {
-    const r = await fetch(adresse(), { method: 'POST', body: JSON.stringify(corps) });
-    const rep = await r.json();
-    if (!rep.ok) throw new Error(rep.erreur || 'refusé');
-    return rep;
+    const ctrl = new AbortController();
+    const minuteur = setTimeout(() => ctrl.abort(), 20000);   // jamais bloqué plus de 20 s
+    try {
+      const r = await fetch(adresse(), { method: 'POST', body: JSON.stringify(corps), signal: ctrl.signal });
+      const rep = await r.json();
+      if (!rep.ok) throw new Error(rep.erreur || 'refusé');
+      return rep;
+    } finally { clearTimeout(minuteur); }
   }
 
   function ligneDe(partie) {
@@ -58,40 +62,47 @@ const API = (() => {
       sommets: partie.sommets,
       gagne: partie.etat === 'gagne',
       graine: partie.graine,
+      temps: partie.temps,
+      pointsJeu: partie.pointsJeu,
       niveau: partie.niveau,
       difficulte: partie.difficulte,
-      date: new Date().toISOString()
+      date: new Date().toISOString(),
+      id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
     };
   }
+
+  // Le score est d'abord rangé sur l'appareil (scores + file d'envoi), PUIS envoyé.
+  // Il n'est donc pas perdu si on relance une partie ou si on ferme l'app pendant l'envoi :
+  // la file se vide au prochain envoi réussi.
+  let envoi = Promise.resolve();   // les envois se font un par un
 
   async function sauver(partie) {
     const ligne = ligneDe(partie);
     const locaux = stock.lire('tp_scores', []);
     locaux.push(ligne);
     stock.ecrire('tp_scores', locaux.slice(-100));
-
     if (!adresse()) return { mode: 'local' };
-    try {
-      await poster(ligne);
-      return { mode: 'en_ligne' };
-    } catch (e) {
-      const file = stock.lire('tp_file', []);
-      file.push(ligne);
-      stock.ecrire('tp_file', file.slice(-50));
-      return { mode: 'en_attente' };
-    }
+
+    const file = stock.lire('tp_file', []);
+    file.push(ligne);
+    stock.ecrire('tp_file', file.slice(-50));
+    await envoyerFile();
+    const reste = stock.lire('tp_file', []);
+    return { mode: reste.some(l => l.id === ligne.id) ? 'en_attente' : 'en_ligne' };
   }
 
-  // Renvoie les scores restés en attente (hors connexion)
-  async function envoyerFile() {
-    if (!adresse()) return;
-    const file = stock.lire('tp_file', []);
-    if (!file.length) return;
-    const reste = [];
-    for (const l of file) {
-      try { await poster(l); } catch (e) { reste.push(l); }
-    }
-    stock.ecrire('tp_file', reste);
+  // Envoie les scores de la file, un par un ; un score envoyé en sort tout de suite
+  function envoyerFile() {
+    envoi = envoi.then(async () => {
+      if (!adresse()) return;
+      for (const l of stock.lire('tp_file', [])) {
+        try {
+          await poster(l);
+          stock.ecrire('tp_file', stock.lire('tp_file', []).filter(x => x.id !== l.id));
+        } catch (e) { /* il reste dans la file, on réessaiera */ }
+      }
+    });
+    return envoi;
   }
 
   function classementLocal() {

@@ -9,7 +9,7 @@
  */
 
 const NOM_FEUILLE = 'scores';
-const ENTETES = ['date', 'joueur_id', 'pseudo', 'score', 'serie_max', 'sommets', 'gagne', 'graine', 'niveau', 'difficulte'];
+const ENTETES = ['date', 'joueur_id', 'pseudo', 'score', 'serie_max', 'sommets', 'gagne', 'graine', 'niveau', 'difficulte', 'temps_s', 'points_jeu'];
 const DIFFICULTES = ['simple', 'moyen', 'difficile'];
 const SCORE_MAX = 100000;      // un score plus grand est forcément truqué
 const DELAI_MIN_SECONDES = 5;  // un même joueur ne peut pas enregistrer plus vite
@@ -45,6 +45,10 @@ function doPost(e) {
     const niveau = Math.floor(Number(d.niveau || 1));
     const difficulte = String(d.difficulte || 'simple');
     if (!(niveau >= 1 && niveau <= 99)) return json_({ ok: false, erreur: 'niveau invalide' });
+    const temps = Math.floor(Number(d.temps || 0));          // temps de jeu en secondes
+    const pointsJeu = Math.floor(Number(d.pointsJeu || 0));  // points avant les bonus de fin
+    if (!(temps >= 0 && temps <= 86400)) return json_({ ok: false, erreur: 'temps invalide' });
+    if (!(pointsJeu >= 0 && pointsJeu <= SCORE_MAX)) return json_({ ok: false, erreur: 'points invalides' });
     if (DIFFICULTES.indexOf(difficulte) < 0) return json_({ ok: false, erreur: 'difficulté invalide' });
 
     // 2. limiter le rythme
@@ -58,7 +62,7 @@ function doPost(e) {
     try {
       feuille_().appendRow([
         new Date(), joueurId, nettoyer_(d.pseudo), score, serieMax, sommets,
-        d.gagne === true, String(d.graine || ''), niveau, difficulte
+        d.gagne === true, String(d.graine || ''), niveau, difficulte, temps, pointsJeu
       ]);
     } finally {
       verrou.releaseLock();
