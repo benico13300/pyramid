@@ -9,7 +9,7 @@
   const app = document.getElementById('app');
   app.innerHTML = `
     <header class="haut">
-      <h1>TriPeaks <small>Égypte</small></h1>
+      <h1>Pyramida</h1>
       <input id="pseudo" maxlength="20" placeholder="Ton pseudo" aria-label="Pseudo" autocomplete="off">
     </header>
     <div class="stats">
@@ -25,6 +25,7 @@
     <div class="cadre"><div class="plateau" id="plateau"></div></div>
     <p id="msg" class="msg" aria-live="polite"></p>
     <div class="base">
+      <button id="joker" class="pile jokerslot" aria-label="Joker"></button>
       <button id="pioche" class="pile" aria-label="Piocher une carte"></button>
       <div id="actif" class="pile" aria-label="Carte active"></div>
       <button id="reserve" class="pile reserve" aria-label="Réserve"></button>
@@ -35,7 +36,7 @@
     </div>
     <div class="options">
       <label><input type="checkbox" id="optBoucle" checked> Bouclage As ↔ Roi</label>
-      <label><input type="checkbox" id="optAide" checked> Surligner les coups</label>
+      <label><input type="checkbox" id="optAide"> Surligner les coups</label>
       <label>Difficulté <select id="optDiff">
         <option value="simple">Simple (chaînes : 2)</option>
         <option value="moyen">Moyen (chaînes : 4)</option>
@@ -48,13 +49,15 @@
       <b>Réserve</b> : touche l'emplacement vide pour y ranger la carte active (une carte de la pioche la remplace) ; touche la carte rangée pour la ramener en jeu.<br>
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
-      <b>★ Joker</b> : il se joue sur n'importe quelle carte. Vide les 3 sommets pour passer au niveau suivant.</p>
+      <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte.
+      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour passer au niveau suivant.</p>
     <div id="voile" class="voile" hidden></div>`;
 
   const $ = id => document.getElementById(id);
   const plateau = $('plateau');
   let partie = null;
-  let aide = true;
+  const TP = 72;                              // largeur des cartes des piles
+  let aide = false;                           // « Surligner les coups » est désactivé par défaut
   let bouclage = true;
   const NIVEAUX_MAX = 20;
   let niveau = Math.max(1, Number(API.reglage('niveau', 1)) || 1);
@@ -96,12 +99,22 @@
       if (c.cle && visible) el.appendChild(elIcone('cle'));
       if (c.chaine) el.appendChild(elIcone('chaine'));
       if (visible && partie.blocage(c.id)) el.classList.add('bloquee');
+      if (visible && c.bonus) el.classList.add('bonus-' + c.bonus);
       plateau.appendChild(el);
     }
 
+    // joker (à gauche de la pioche) : un clic le joue comme carte active
+    const bj = $('joker');
+    const cj = elCarte(new Carte(0, 'joker'), TP);
+    const nj = document.createElement('span');
+    nj.className = 'badge badge-joker';
+    nj.textContent = partie.jokers;
+    bj.replaceChildren(cj, nj);
+    bj.disabled = partie.jokers <= 0 || partie.active.joker || partie.etat !== 'en_cours';
+
     // pile de pioche
     const bp = $('pioche');
-    bp.replaceChildren(elDos(84));
+    bp.replaceChildren(elDos(TP));
     const nb = document.createElement('span');
     nb.className = 'badge';
     nb.textContent = partie.pioche.length;
@@ -109,14 +122,14 @@
     bp.disabled = partie.pioche.length === 0 || partie.etat !== 'en_cours';
 
     // carte active
-    const actif = elCarte(partie.active, 84);
+    const actif = elCarte(partie.active, TP);
     if (animer) actif.classList.add('pop');
     $('actif').replaceChildren(actif);
 
     // réserve : emplacement vide (clic = y ranger la carte active) ou carte rangée (clic = la reprendre)
     const rs = $('reserve');
     if (partie.reserve) {
-      rs.replaceChildren(elCarte(partie.reserve, 84));
+      rs.replaceChildren(elCarte(partie.reserve, TP));
       rs.classList.add('pleine');
       rs.disabled = partie.etat !== 'en_cours';
       rs.setAttribute('aria-label', 'Réserve : reprendre la carte');
@@ -160,6 +173,8 @@
       if (r.cleRamassee) ev.push('🗝 Clé ramassée !');
       if (r.cadenasOuvert) ev.push('🔓 Cadenas ouvert !');
       if (r.chainesBrisees) ev.push('💥 Les chaînes sont brisées !');
+      if (r.jokerGagne) ev.push('🟦 Un joker de plus !');
+      if (r.packGagne) ev.push('🟩 +5 cartes en pioche !');
       message(ev.join(' '));
       apres(true);
     } else {
@@ -171,6 +186,9 @@
 
   $('pioche').addEventListener('click', () => { if (partie.piocher()) { message(''); apres(true); } });
   $('annuler').addEventListener('click', () => { if (partie.annuler()) { message(''); dessiner(false); } });
+  $('joker').addEventListener('click', () => {
+    if (partie.utiliserJoker()) { message('★ Joker joué : il se pose sur n\'importe quelle carte.'); apres(true); }
+  });
   $('reserve').addEventListener('click', () => {
     if (partie.reserve) {
       if (partie.reprendreReserve()) { message('↩ Carte reprise depuis la réserve.'); apres(true); }

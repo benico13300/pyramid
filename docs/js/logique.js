@@ -80,17 +80,23 @@ function configNiveau(n) {
     { chaines: 3, cadenas: 0, jokers: 1 },   // 4 : le joker
     { chaines: 3, cadenas: 2, jokers: 1 }    // 5 : tout ensemble
   ];
-  if (n < T.length) return { ...T[n] };
+  // Cartes bonus (fond bleu = un joker de plus, fond vert = 5 cartes de plus en pioche)
+  const bonus = { bleus: n >= 5 ? 2 : 1, verts: 1 };
+  if (n < T.length) return { ...T[n], ...bonus };
   const e = n - 5;                            // au-delà : de plus en plus d'obstacles
-  return { chaines: Math.min(3 + e, 6), cadenas: Math.min(2 + Math.floor(e / 2), 4), jokers: Math.min(1 + Math.floor(e / 3), 2) };
+  return { chaines: Math.min(3 + e, 6), cadenas: Math.min(2 + Math.floor(e / 2), 4), jokers: Math.min(1 + Math.floor(e / 3), 2), ...bonus };
 }
+
+const NB_CARTES_PACK = 5;                     // cartes ajoutées à la pioche par une carte verte
 
 function descriptionNiveau(n, difficulte) {
   const c = configNiveau(n), L = DIFFICULTES[difficulte].chaine, t = [];
   if (c.chaines) t.push(`🔗 ${c.chaines} chaînes : enchaîne ${L} cartes d'affilée pour les briser`);
   if (c.cadenas) t.push(`🔒 ${c.cadenas} cadenas : il faut une 🗝 (cachée sur une carte) pour chacun`);
   if (c.jokers) t.push(`★ ${c.jokers} joker : il se joue sur n'importe quelle carte`);
-  return t.length ? t.join(' · ') : 'Niveau classique : dégage les 3 sommets';
+  t.push(`🟦 carte bleue : un joker de plus`);
+  t.push(`🟩 carte verte : +${NB_CARTES_PACK} cartes en pioche`);
+  return (t.length > 2 ? '' : 'Dégage les 3 sommets · ') + t.join(' · ');
 }
 
 class Partie {
@@ -107,7 +113,7 @@ class Partie {
     let k = 0;
     RANGEES.forEach((xs, rangee) => xs.forEach(x => {
       this.cases.push({ id: k, rangee, x, carte: cartes[k], enlevee: false, couvertePar: [],
-                        chaine: false, cadenas: false, cle: false });
+                        chaine: false, cadenas: false, cle: false, bonus: null });
       k++;
     }));
     // Une carte est couverte par les 2 cartes de la rangée du dessous qui la chevauchent
@@ -131,6 +137,9 @@ class Partie {
     this.bonusFinal = 0;
     this.cles = 0;                           // clés ramassées et pas encore utilisées
     this.reserve = null;                     // une carte mise de côté (une seule à la fois)
+    this.jokers = 1;                         // joker de départ, à gauche de la pioche
+    this.extra = 0;                          // cartes ajoutées à la pioche par les cartes vertes
+    this._hasardBonus = alea(this.graine + 104729);
     this.etat = 'en_cours';                  // 'en_cours' | 'gagne' | 'perdu'
     this.historique = [];
     this._verifierFin();
@@ -176,6 +185,10 @@ class Partie {
     for (let i = 0; i < cfg.chaines && chainables.length; i++) {
       this.cases[tirer(chainables)].chaine = true;
     }
+    // Cartes bonus : des cartes normales, sans autre obstacle
+    const nues = this.cases.filter(c => !c.chaine && !c.cadenas && !c.cle && !c.carte.joker).map(c => c.id);
+    for (let i = 0; i < (cfg.bleus || 0) && nues.length; i++) this.cases[tirer(nues)].bonus = 'bleu';
+    for (let i = 0; i < (cfg.verts || 0) && nues.length; i++) this.cases[tirer(nues)].bonus = 'vert';
   }
 
   get chainesActives() { return this.cases.some(c => c.chaine && !c.enlevee); }
@@ -216,6 +229,7 @@ class Partie {
       pioche: this.pioche.slice(),
       defausse: this.defausse.slice(),
       chaines: this.cases.map(c => c.chaine), cles: this.cles, reserve: this.reserve,
+      jokers: this.jokers, extra: this.extra,
       score: this.score, serie: this.serie, serieMax: this.serieMax,
       sommets: this.sommets, nbCoups: this.nbCoups
     });
@@ -226,11 +240,13 @@ class Partie {
     if (!this.jouable(id)) return null;
     this._instantane();
     const c = this.cases[id];
-    const evenements = { cadenasOuvert: false, cleRamassee: false, chainesBrisees: false };
+    const evenements = { cadenasOuvert: false, cleRamassee: false, chainesBrisees: false, jokerGagne: false, packGagne: false };
     if (c.cadenas) { this.cles--; evenements.cadenasOuvert = true; }   // le cadenas consomme une clé
     if (c.cle) { this.cles++; evenements.cleRamassee = true; }          // la clé est ramassée
     c.enlevee = true;
     this.defausse.push(c.carte);
+    if (c.bonus === 'bleu') { this.jokers++; evenements.jokerGagne = true; }
+    if (c.bonus === 'vert') { this._ajouterPack(); evenements.packGagne = true; }
     this.serie++;
     this.serieMax = Math.max(this.serieMax, this.serie);
     // Assez de cartes d'affilée : toutes les chaînes se brisent
@@ -245,6 +261,30 @@ class Partie {
     this.nbCoups++;
     this._verifierFin();
     return { gain, sommet, ...evenements };
+  }
+
+  // Carte verte : 5 cartes tirées au hasard rejoignent le fond de la pioche
+  _ajouterPack() {
+    for (let i = 0; i < NB_CARTES_PACK; i++) {
+      const valeur = 1 + Math.floor(this._hasardBonus() * 13);
+      const couleur = FAMILLES[Math.floor(this._hasardBonus() * FAMILLES.length)];
+      this.pioche.unshift(new Carte(valeur, couleur));   // le fond de la pile : elles sortent en dernier
+      this.extra++;
+    }
+  }
+
+  // Joker de départ (ou gagné) : il devient la carte active et se joue sur n'importe quelle carte.
+  // La série est conservée.
+  utiliserJoker() {
+    if (this.etat !== 'en_cours' || this.jokers <= 0 || this.active.joker) return false;
+    this._instantane();
+    this.jokers--;
+    const j = new Carte(0, 'joker');
+    j.depart = true;                         // joker venu de la réserve de jokers (pas du tableau)
+    this.defausse.push(j);
+    this.nbCoups++;
+    this._verifierFin();
+    return true;
   }
 
   // Pioche une carte : elle devient la carte active, et la série retombe à 0
@@ -288,6 +328,7 @@ class Partie {
     this.cases.forEach((c, i) => { c.enlevee = s.enlevees[i]; c.chaine = s.chaines[i]; });
     this.cles = s.cles;
     this.reserve = s.reserve;
+    this.jokers = s.jokers; this.extra = s.extra;
     this.pioche = s.pioche;
     this.defausse = s.defausse;
     this.score = s.score; this.serie = s.serie; this.serieMax = s.serieMax;
@@ -301,7 +342,8 @@ class Partie {
       this.bonusFinal = POINTS.pioche * this.pioche.length;
       this.score += this.bonusFinal;
     } else if (this.pioche.length === 0 && !this.cases.some(c => this._peutJouer(c.id)) &&
-               !(this.reserve && this.cases.some(c => this._peutJouer(c.id, this.reserve)))) {
+               !(this.reserve && this.cases.some(c => this._peutJouer(c.id, this.reserve))) &&
+               !(this.jokers > 0 && this.cases.some(c => this._peutJouer(c.id, new Carte(0, 'joker'))))) {
       this.etat = 'perdu';
     } else {
       this.etat = 'en_cours';
@@ -310,5 +352,5 @@ class Partie {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, DIFFICULTES, configNiveau, descriptionNiveau, alea, paquet52, melanger };
+  module.exports = { RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, DIFFICULTES, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
 }

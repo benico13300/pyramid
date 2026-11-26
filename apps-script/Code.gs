@@ -1,5 +1,5 @@
 /**
- * Code.gs — le "serveur" du TriPeaks (Google Apps Script).
+ * Code.gs — le "serveur" de Pyramida (Google Apps Script).
  * Reçoit les scores envoyés par le jeu (GitHub Pages) et les écrit dans une Google Sheet.
  *
  * Déploiement : Déployer > Nouveau déploiement > Application Web

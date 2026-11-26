@@ -38,7 +38,7 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.4em}
 /* Gros chiffre central : il remplit la carte, comme dans le jeu de référence */
 .mid.num{font-size:4.2em;font-weight:900;letter-spacing:-.03em;padding-top:.08em;text-shadow:0 1px 0 #fff6,0 -1px 0 #0003}
-.mid.num.dix{font-size:3em;letter-spacing:-.1em;padding-right:.1em}
+.mid.num.dix{font-size:3.7em;letter-spacing:-.13em;padding-right:.13em}
 .face.fig .art{left:-6%;right:-6%}
 .fig .corner{background:#f3e3b8d9;border-radius:.3em;padding:.1em .16em;z-index:2}
 .art{position:absolute;left:2%;right:2%;top:50%;transform:translateY(-50%)}
@@ -74,8 +74,8 @@ select{font:inherit;font-size:.88rem;padding:4px 8px;border-radius:999px;border:
 @keyframes pop{from{transform:scale(1.18);opacity:.5}to{transform:scale(1);opacity:1}}
 
 /* ---------- pioche, carte active, boutons ---------- */
-.base{display:flex;justify-content:center;align-items:center;gap:18px;margin:22px 6px 10px}
-.pile{position:relative;background:none;border:0;padding:0;display:block;min-width:84px;min-height:118px}
+.base{display:flex;justify-content:center;align-items:center;gap:16px;margin:22px 6px 10px}
+.pile{position:relative;background:none;border:0;padding:0;display:block;min-width:72px;min-height:101px}
 button.pile{cursor:pointer}
 button.pile:disabled{opacity:.35;cursor:default}
 .badge{position:absolute;right:-6px;top:-8px;min-width:1.7em;padding:.1em .45em;border-radius:999px;
@@ -106,8 +106,14 @@ button:disabled{opacity:.4;cursor:default}
 .lien{width:100%;margin-top:8px;border:0;font-size:.9rem;text-decoration:underline;opacity:.85}
 
 /* ---------- réserve ---------- */
-.reserve{border-radius:calc(84px/9)}
+.reserve{border-radius:8px}
 .reserve .vide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
-  font-size:.8rem;color:#9fd4ff;letter-spacing:.04em;border:2px dashed #5aa9e6;border-radius:calc(84px/9);
+  font-size:.8rem;color:#9fd4ff;letter-spacing:.04em;border:2px dashed #5aa9e6;border-radius:8px;
   background:radial-gradient(circle at 50% 45%,#2c6fb066,#0b1a1700 75%);box-shadow:inset 0 0 14px #2a7fd055}
 .reserve.pleine .face{box-shadow:0 0 0 2px #5aa9e6,0 0 12px 2px #3d8fe0}
+
+/* ---------- joker de départ, cartes bonus ---------- */
+.jokerslot .face{box-shadow:0 0 0 2px #2f9a55,0 0 10px 1px #2f9a5588}
+.badge-joker{background:#2f9a55;color:#fff}
+.face.bonus-bleu{background:linear-gradient(160deg,#cfe9ff,#6db4f0 60%,#3b8fd6);box-shadow:0 2px 4px #0009, inset 0 0 0 1px #1d5fa3}
+.face.bonus-vert{background:linear-gradient(160deg,#d6f5cc,#7fd36b 60%,#3fae45);box-shadow:0 2px 4px #0009, inset 0 0 0 1px #1f7a2c}

@@ -1,7 +1,7 @@
 {
-  "name": "TriPeaks Égypte",
-  "short_name": "TriPeaks",
-  "description": "Solitaire TriPeaks à thème égyptien",
+  "name": "Pyramida",
+  "short_name": "Pyramida",
+  "description": "Pyramida : solitaire de type TriPeaks à thème égyptien",
   "lang": "fr",
   "start_url": "./index.html",
   "scope": "./",

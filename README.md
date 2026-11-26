@@ -1,6 +1,6 @@
-# TriPeaks Égypte
+# Pyramida
 
-Solitaire TriPeaks jouable sur iPhone (installable sur l'écran d'accueil, fonctionne hors connexion).
+Pyramida : solitaire de type TriPeaks jouable sur iPhone (installable sur l'écran d'accueil, fonctionne hors connexion).
 
 ```
 tripeaks/

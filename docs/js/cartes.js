@@ -113,14 +113,17 @@ function injecterDefs() {
         <ellipse cx="78" cy="20" rx="17" ry="9"/><ellipse cx="102" cy="20" rx="14" ry="9"/></g>
       <g stroke="#c9d0d8" stroke-width="6"><ellipse cx="22" cy="20" rx="17" ry="9"/><ellipse cx="50" cy="20" rx="17" ry="9"/>
         <ellipse cx="78" cy="20" rx="17" ry="9"/><ellipse cx="102" cy="20" rx="14" ry="9"/></g></g></symbol>
-  <symbol id="scarabee" viewBox="0 0 100 100">
+<symbol id="anubis" viewBox="0 0 100 100">
     <g stroke="#2a1d0e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
-      <path d="M50 8 L58 20 L42 20 Z" fill="#c8932a"/>
-      <ellipse cx="50" cy="58" rx="27" ry="32" fill="#1d6f7a"/>
-      <path d="M50 28 V90" fill="none"/>
-      <path d="M26 44 Q8 36 6 18 Q24 24 32 38 M74 44 Q92 36 94 18 Q76 24 68 38" fill="#e0a526"/>
-      <path d="M24 66 Q8 70 6 86 Q22 84 30 74 M76 66 Q92 70 94 86 Q78 84 70 74" fill="#e0a526"/>
-      <circle cx="50" cy="20" r="9" fill="#c8932a"/></g></symbol>`;
+      <path d="M16 78 Q50 100 84 78 L78 94 Q50 110 22 94 Z" fill="#e0a526"/>
+      <path d="M30 70 L24 96 L40 92 L44 78 Z" fill="#1d6f7a"/>
+      <path d="M26 66 L28 42 L34 8 L48 34 L58 6 L64 38 L88 52 L96 56 L96 62 L72 66 L62 78 L34 82 Z" fill="#26262c"/>
+      <path d="M35 20 L43 36 L33 38 Z M58 18 L61 36 L52 34 Z" fill="#c8932a" stroke="none"/>
+      <ellipse cx="68" cy="50" rx="5.5" ry="3.8" fill="#f6ecd0" stroke-width="2"/>
+      <circle cx="69.5" cy="50" r="1.9" fill="#2a1d0e" stroke="none"/>
+      <path d="M61 50 L44 55" fill="none" stroke="#e0a526" stroke-width="3.2"/>
+      <path d="M48 34 Q56 46 70 44" fill="none" stroke="#e0a526" stroke-width="2.4"/>
+    </g></symbol>`;
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('id', 'defs-cartes');
   svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
@@ -138,7 +141,7 @@ function elCarte(c, w) {
   if (w) d.style.setProperty('--w', w + 'px');
   if (c.valeur === 0) {   // le joker
     d.className = 'card face joker';
-    d.innerHTML = '<div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="Joker"><use href="#scarabee"/></svg></div>' +
+    d.innerHTML = '<div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="Joker"><use href="#anubis"/></svg></div>' +
                   '<span class="mot">JOKER</span>';
     return d;
   }
