@@ -146,7 +146,7 @@ function elCarte(c, w) {
   const coin = cls => `<span class="corner ${cls}">${r}<small>${s}</small></span>`;
   const centre = c.valeur >= 11
     ? `<div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="${c.valeur === 13 ? 'Roi' : c.valeur === 12 ? 'Reine' : 'Valet'}"><use href="#fig-${c.valeur}-${c.couleur}"/></svg></div>`
-    : `<span class="mid">${s}</span>`;
+    : `<span class="mid num${r === '10' ? ' dix' : ''}">${r}</span>`;   // gros chiffre central, comme sur les cartes papyrus
   d.innerHTML = coin('tl') + centre + coin('br');
   return d;
 }

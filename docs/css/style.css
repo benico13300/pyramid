@@ -28,14 +28,18 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 /* ---------- carte ---------- */
 .card{--w:84px;position:relative;width:var(--w);aspect-ratio:5/7;font-size:calc(var(--w)/5);
   border-radius:calc(var(--w)/9);flex:none}
-.face{background:linear-gradient(160deg,var(--sable),var(--sable2));color:var(--encre);
-  box-shadow:0 2px 4px #0009, inset 0 0 0 1px #8a6a2a88}
+.face{background:radial-gradient(120% 100% at 30% 20%,#f0dcae,#e2c68a 70%,#d4b273);color:var(--encre);
+  box-shadow:0 2px 4px #0009, inset 0 0 0 1px #8a6a2a99, inset 0 0 8px #b8903f66}
 .face.red{color:var(--rouge)}
-.corner{position:absolute;line-height:1;text-align:center;font-weight:700;font-size:.95em}
-.corner small{display:block;font-size:.95em;font-weight:400}
+.corner{position:absolute;line-height:1;text-align:center;font-weight:700;font-size:1.05em}
+.corner small{display:block;font-size:.8em;font-weight:400}
 .tl{top:.35em;left:.38em}
 .br{bottom:.35em;right:.38em;transform:rotate(180deg)}
 .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.4em}
+/* Gros chiffre central : il remplit la carte, comme dans le jeu de référence */
+.mid.num{font-size:3.7em;font-weight:900;letter-spacing:-.03em;padding-top:.08em;text-shadow:0 1px 0 #fff6,0 -1px 0 #0003}
+.mid.num.dix{font-size:3em;letter-spacing:-.1em;padding-right:.1em}
+.face.fig .art{left:-6%;right:-6%}
 .fig .corner{background:#f3e3b8d9;border-radius:.3em;padding:.1em .16em;z-index:2}
 .art{position:absolute;left:2%;right:2%;top:50%;transform:translateY(-50%)}
 .art svg{display:block;width:100%;height:auto}
