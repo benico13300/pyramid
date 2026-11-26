@@ -37,7 +37,7 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 .br{bottom:.35em;right:.38em;transform:rotate(180deg)}
 .mid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:2.4em}
 /* Gros chiffre central : il remplit la carte, comme dans le jeu de référence */
-.mid.num{font-size:3.7em;font-weight:900;letter-spacing:-.03em;padding-top:.08em;text-shadow:0 1px 0 #fff6,0 -1px 0 #0003}
+.mid.num{font-size:4.2em;font-weight:900;letter-spacing:-.03em;padding-top:.08em;text-shadow:0 1px 0 #fff6,0 -1px 0 #0003}
 .mid.num.dix{font-size:3em;letter-spacing:-.1em;padding-right:.1em}
 .face.fig .art{left:-6%;right:-6%}
 .fig .corner{background:#f3e3b8d9;border-radius:.3em;padding:.1em .16em;z-index:2}
@@ -49,7 +49,7 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 
 /* ---------- joker, obstacles ---------- */
 .joker{background:linear-gradient(160deg,#fff1c2,#f0c860 55%,#e0a526);color:#4a2c00}
-.joker .art{top:46%;left:12%;right:12%}
+.joker .art{top:44%;left:10%;right:10%}
 .mot{position:absolute;left:0;right:0;bottom:.5em;text-align:center;font-weight:700;font-size:.55em;letter-spacing:.12em}
 .ico{position:absolute;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
 .ico svg{display:block;width:100%;height:auto}

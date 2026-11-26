@@ -130,24 +130,21 @@ function injecterDefs() {
   document.body.prepend(svg);
 }
 
-// Une face de carte. c = { valeur, couleur, rang }, w = largeur en pixels (facultatif)
+// Une face de carte. c = { valeur, couleur }, w = largeur en pixels (facultatif)
+// Pas de coins : un gros chiffre (ou lettre) au centre. Roi = R, Dame = D, Valet = J.
+const LETTRES = { 1: 'A', 11: 'J', 12: 'D', 13: 'R' };
 function elCarte(c, w) {
   const d = document.createElement('div');
+  if (w) d.style.setProperty('--w', w + 'px');
   if (c.valeur === 0) {   // le joker
     d.className = 'card face joker';
-    if (w) d.style.setProperty('--w', w + 'px');
-    d.innerHTML = '<span class="corner tl">★</span><div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="Joker"><use href="#scarabee"/></svg></div>' +
-                  '<span class="mot">JOKER</span><span class="corner br">★</span>';
+    d.innerHTML = '<div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="Joker"><use href="#scarabee"/></svg></div>' +
+                  '<span class="mot">JOKER</span>';
     return d;
   }
-  d.className = 'card face' + (COULEURS[c.couleur].rouge ? ' red' : '') + (c.valeur >= 11 ? ' fig' : '');
-  if (w) d.style.setProperty('--w', w + 'px');
-  const s = COULEURS[c.couleur].sym, r = RANGS[c.valeur - 1];
-  const coin = cls => `<span class="corner ${cls}">${r}<small>${s}</small></span>`;
-  const centre = c.valeur >= 11
-    ? `<div class="art"><svg viewBox="0 0 100 100" role="img" aria-label="${c.valeur === 13 ? 'Roi' : c.valeur === 12 ? 'Reine' : 'Valet'}"><use href="#fig-${c.valeur}-${c.couleur}"/></svg></div>`
-    : `<span class="mid num${r === '10' ? ' dix' : ''}">${r}</span>`;   // gros chiffre central, comme sur les cartes papyrus
-  d.innerHTML = coin('tl') + centre + coin('br');
+  d.className = 'card face' + (COULEURS[c.couleur].rouge ? ' red' : '');
+  const r = LETTRES[c.valeur] || String(c.valeur);
+  d.innerHTML = `<span class="mid num${r === '10' ? ' dix' : ''}">${r}</span>`;
   return d;
 }
 
