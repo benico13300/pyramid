@@ -62,98 +62,119 @@ const RANGEES = [
 
 
 // ----- Dispositions aléatoires -----
-// Chaque case a une colonne x (0 à 9, par demi-pas) et un rang y (une demi-hauteur de carte par rang).
-// Les rangs pairs sont aux demi-colonnes (0,5 · 1,5 …), les rangs impairs aux colonnes entières :
-// une carte est donc toujours posée à cheval sur 2 cartes du rang du dessous, comme dans TriPeaks.
+// Les cartes sont posées sur une grille fine : un pas = une demi-carte, en largeur comme en hauteur
+// (gx 0 à 14, gy 0 à 6). Une carte posée à cheval peut donc recouvrir 1, 2, 3 ou 4 cartes.
+// L'ordre du tableau = l'ordre de pose : une carte recouvre celles qui la chevauchent et qui sont avant elle.
 const NB_CASES = 28;
-const LARGEUR = 10;
+const VALID = { expMin: 8, expMax: 14, profMax: 4, couvMax: 4 };
+const GX_MAX = 14;
+const GY_MAX = 6;
 
 function _dispoClassique() {
   const cases = [];
-  RANGEES.forEach((xs, y) => xs.forEach(x => cases.push({ x, y })));
-  return cases;
+  RANGEES.forEach((xs, y) => xs.forEach(x => cases.push({ px: x / 1.2, py: y * 0.5 })));
+  return { liste: cases, style: 'classique' };
 }
 
-function _cellules(y) {                       // colonnes possibles sur un rang
-  const dem = y % 2 === 0;
-  const out = [];
-  for (let i = 0; i < LARGEUR - (dem ? 1 : 0); i++) out.push(dem ? i + 0.5 : i);
-  return out;
-}
+const _chevauche = (a, b) => Math.abs(a.px - b.px) < 0.8 && Math.abs(a.py - b.py) < 0.99;
 
-function _tenterDispo(r) {
-  const nbRangs = 3 + Math.floor(r() * 3);                       // 3 à 5 rangs
-  const symetrique = r() < 0.5;
-  const poids = Array.from({ length: nbRangs }, () => 0.6 + r());
-  const somme = poids.reduce((a, b) => a + b, 0);
-  const pris = new Set();
-  const cle = (x, y) => x + ',' + y;
-  const demi = (LARGEUR - 1) / 2;                                 // axe de symétrie (4,5)
+// Formes possibles du tableau : chacune donne un "poids" à chaque emplacement de la grille.
+const STYLES = {
+  ilots(r) {          // 2 à 4 îlots répartis sur la table
+    const k = 2 + Math.floor(r() * 3);
+    const cs = Array.from({ length: k }, (_, i) => ({ x: 2 + (10 * (i + 0.2 + r() * 0.6)) / k, y: 1 + r() * 4 }));
+    return (x, y) => 0.03 + Math.max(...cs.map(c => Math.exp(-(((x - c.x) / 2.6) ** 2 + ((y - c.y) / 1.9) ** 2))));
+  },
+  losange() {
+    return (x, y) => (Math.abs(x - 7) / 6.5 + Math.abs(y - 3) / 3.4 <= 1 ? 1 : 0.02);
+  },
+  large(r) {          // une bande large et basse
+    const y0 = Math.floor(r() * 3);
+    return (x, y) => (y >= y0 && y <= y0 + 3 ? 1 : 0.02);
+  },
+  tour(r) {           // grosse pile étroite et haute
+    const cx = 5 + r() * 4;
+    return (x, y) => 0.02 + Math.exp(-(((x - cx) / 2.6) ** 2 + ((y - 3) / 3.2) ** 2));
+  },
+  anneau() {          // les cartes forment une couronne vide au centre
+    return (x, y) => 0.02 + Math.exp(-(((Math.hypot((x - 7) / 6.2, (y - 3) / 3.1) - 0.85) / 0.3) ** 2));
+  },
+  diagonale(r) {
+    const sens = r() < 0.5 ? 1 : -1;
+    return (x, y) => {
+      const cible = sens > 0 ? 1.5 + y * 2 : 12.5 - y * 2;
+      return 0.02 + Math.exp(-(((x - cible) / 2.8) ** 2));
+    };
+  },
+  croix() {
+    return (x, y) => (Math.abs(x - 7) <= 2.5 || Math.abs(y - 3) <= 1 ? 1 : 0.02);
+  }
+};
+const NOMS_STYLES = Object.keys(STYLES);
+const STYLES_SYMETRIQUES = new Set(['losange', 'anneau', 'croix', 'ilots', 'tour']);
 
-  for (let y = 0; y < nbRangs; y++) {
-    const cel = _cellules(y);
-    const cible = Math.max(2, Math.min(cel.length, Math.round(NB_CASES * poids[y] / somme)));
-    // on découpe en 1 à 3 paquets de cartes côte à côte, séparés par des trous
-    const zone = symetrique ? cel.filter(x => x < demi) : cel;
-    let n = symetrique ? Math.floor(cible / 2) : cible;
-    if (n > zone.length) n = zone.length;
-    const g = Math.max(1, Math.min(n, 1 + Math.floor(r() * 3)));
-    const tailles = Array(g).fill(1);
-    for (let i = g; i < n; i++) tailles[Math.floor(r() * g)]++;
-    let besoin = n + (g - 1);
-    if (besoin > zone.length) { tailles.length = 1; tailles[0] = n; besoin = n; }
-    let libre = zone.length - besoin;
-    let pos = 0;
-    for (let i = 0; i < tailles.length; i++) {
-      const avant = i === 0 ? Math.floor(r() * (libre + 1)) : 1 + Math.floor(r() * (libre + 1));
-      if (i === 0) libre -= avant; else libre -= (avant - 1);
-      pos += avant;
-      for (let k = 0; k < tailles[i]; k++) pris.add(cle(zone[pos + k], y));
-      pos += tailles[i];
+function _tenterDispo(r, nom) {
+  const masque = STYLES[nom](r);
+  const symetrique = STYLES_SYMETRIQUES.has(nom) && r() < 0.6 && nom !== 'tour' && nom !== 'ilots';
+  const poses = [];
+  const poids = [0.05, 1, 3, 3, 2];            // selon le nombre de cartes déjà recouvertes (0 à 4)
+  const libre = (c, autre) => !poses.concat(autre ? [autre] : []).some(d =>
+    Math.abs(d.gx - c.gx) < 1 && Math.abs(d.gy - c.gy) < 1);
+  const tirer = (colMax) => {
+    const cands = [];
+    for (let gx = 0; gx <= colMax; gx++) for (let gy = 0; gy <= GY_MAX; gy++) {
+      const c = { gx, gy, px: gx / 2, py: gy / 2 };
+      if (!libre(c)) continue;
+      const n = poses.filter(d => _chevauche(c, d)).length;
+      if (n > 0) {   // pas de pile trop profonde, pas de carte sous plus de 3 cartes
+        const rel = _relier(poses.concat([c]));
+        if (Math.max(...rel.map(d => d.prof)) > VALID.profMax || Math.max(...rel.map(d => d.couvertePar.length)) > VALID.couvMax) continue;
+      }
+      const p = (poses.length ? poids[Math.min(4, n)] : 1) * masque(gx, gy);
+      if (p > 0) cands.push({ c, p });
     }
+    const total = cands.reduce((a, d) => a + d.p, 0);
+    if (!cands.length) return null;
+    let t = r() * total;
+    for (const d of cands) { t -= d.p; if (t <= 0) return d.c; }
+    return cands[cands.length - 1].c;
+  };
+  while (poses.length < NB_CASES) {
     if (symetrique) {
-      for (const x of zone) if (pris.has(cle(x, y))) pris.add(cle(2 * demi - x, y));
-      if (y % 2 === 0 && r() < 0.5 && cible % 2 === 1) pris.add(cle(demi, y));   // carte centrale
+      const c = tirer(6);                      // moitié gauche, puis on la reflète
+      if (!c) return null;
+      poses.push(c);
+      const m = { gx: GX_MAX - c.gx, gy: c.gy }; m.px = m.gx / 2; m.py = m.gy / 2;
+      poses.push(m);
+    } else {
+      const c = tirer(GX_MAX);
+      if (!c) return null;
+      poses.push(c);
     }
   }
-
-  let liste = [...pris].map(s => { const [x, y] = s.split(',').map(Number); return { x, y }; });
-  const present = (x, y) => liste.some(c => c.x === x && c.y === y);
-  // ajuste le total à 28 cartes
-  let garde = 0;
-  while (liste.length > NB_CASES && garde++ < 200) liste.splice(Math.floor(r() * liste.length), 1);
-  while (liste.length < NB_CASES && garde++ < 400) {
-    const c = liste[Math.floor(r() * liste.length)];
-    const voisins = [[1, 0], [-1, 0], [0.5, 1], [-0.5, 1], [0.5, -1], [-0.5, -1]]
-      .map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy }))
-      .filter(v => v.y >= 0 && v.y < nbRangs && _cellules(v.y).includes(v.x) && !present(v.x, v.y));
-    if (voisins.length) liste.push(voisins[Math.floor(r() * voisins.length)]);
-  }
-  if (liste.length !== NB_CASES) return null;
-  const miny = Math.min(...liste.map(c => c.y));
-  liste.forEach(c => { c.y -= miny; });
-  liste.sort((a, b) => a.y - b.y || a.x - b.x);
-  return liste;
+  const minx = Math.min(...poses.map(c => c.px)), miny = Math.min(...poses.map(c => c.py));
+  return { liste: poses.map(c => ({ px: c.px - minx, py: c.py - miny })), style: nom + (symetrique ? ' (symétrique)' : '') };
 }
 
-// Une disposition est jouable si elle a assez de cartes visibles au départ, de la profondeur
-// et au moins un sommet.
+// Jouable : assez de cartes visibles au départ, de la profondeur, au moins un sommet.
 function _dispoValide(liste) {
   const cases = _relier(liste);
   const exposees = cases.filter(c => c.prof === 0).length;
   const profMax = Math.max(...cases.map(c => c.prof));
   const sommets = cases.filter(c => c.sommet).length;
   const hauts = cases.filter(c => c.prof >= 1).length;
-  return exposees >= 4 && exposees <= 13 && profMax >= 2 && profMax <= 4 && sommets >= 1 && hauts >= 10;
+  const seules = cases.filter(c => !c.couvertePar.length && !cases.some(d => d.couvertePar.includes(c.id))).length;
+  const maxCouv = Math.max(...cases.map(c => c.couvertePar.length));
+  return exposees >= VALID.expMin && exposees <= VALID.expMax && profMax >= 2 && profMax <= VALID.profMax && maxCouv <= VALID.couvMax && sommets >= 1 && hauts >= 10 && seules <= 3;
 }
 
 // Calcule qui couvre qui, la profondeur (0 = visible au départ) et les sommets.
 function _relier(liste) {
-  const cases = liste.map((p, id) => ({ id, rangee: p.y, y: p.y, x: p.x, enlevee: false, couvertePar: [],
-                                        chaine: false, cadenas: false, cle: false, bonus: null }));
-  for (const c of cases) {
-    c.couvertePar = cases.filter(d => d.y === c.y + 1 && Math.abs(d.x - c.x) < 1).map(d => d.id);
-  }
+  const cases = liste.map((p, id) => ({ id, px: p.px, py: p.py, rangee: Math.round(p.py * 2), enlevee: false,
+                                        couvertePar: [], chaine: false, cadenas: false, cle: false, bonus: null }));
+  cases.forEach((c, i) => {
+    c.couvertePar = cases.filter((d, j) => j > i && _chevauche(c, d)).map(d => d.id);
+  });
   for (let i = cases.length - 1; i >= 0; i--) {
     const c = cases[i];
     c.prof = c.couvertePar.length ? 1 + Math.max(...c.couvertePar.map(d => cases[d].prof)) : 0;
@@ -164,11 +185,13 @@ function _relier(liste) {
   return cases;
 }
 
-function genererDisposition(graine) {
+// Disposition tirée de la graine : { liste, style }. nomStyle force une forme (tests).
+function genererDisposition(graine, nomStyle) {
   const r = alea(graine + 31337);
+  const nom = nomStyle || NOMS_STYLES[Math.floor(r() * NOMS_STYLES.length)];
   for (let essai = 0; essai < 300; essai++) {
-    const l = _tenterDispo(r);
-    if (l && _dispoValide(l)) return l;
+    const d = _tenterDispo(r, nom);
+    if (d && _dispoValide(d.liste)) return d;
   }
   return _dispoClassique();
 }
@@ -217,9 +240,12 @@ class Partie {
     this.longueurChaine = this.config.serie;
     const cartes = melanger(paquet52(), this.graine);
     const classique = (options.disposition ?? Partie.DISPOSITION_DEFAUT) === 'classique';
-    this.cases = _relier(classique ? _dispoClassique() : genererDisposition(this.graine));
+    const dispo = classique ? _dispoClassique() : genererDisposition(this.graine, options.style);
+    this.style = dispo.style;
+    this.cases = _relier(dispo.liste);
     this.cases.forEach((c, k) => { c.carte = cartes[k]; });
-    this.nbRangs = Math.max(...this.cases.map(c => c.y)) + 1;
+    this.largeur = Math.max(...this.cases.map(c => c.px)) + 1;   // en largeurs de carte
+    this.hauteur = Math.max(...this.cases.map(c => c.py)) + 1;   // en hauteurs de carte
     this.nbSommets = this.cases.filter(c => c.sommet).length;
 
     this._placerObstacles();
@@ -468,5 +494,5 @@ class Partie {
 Partie.DISPOSITION_DEFAUT = 'aleatoire';   // 'classique' = les 3 pyramides fixes (tests)
 
 if (typeof module !== 'undefined') {
-  module.exports = { genererDisposition, _relier, NB_CASES, RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
+  module.exports = { genererDisposition, _relier, VALID, NB_CASES, RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
 }

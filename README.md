@@ -55,6 +55,8 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 
 ## Dispositions aléatoires
 
-- Chaque partie a une disposition différente des 28 cartes du tableau (générée à partir de la graine : « Rejouer la même partie » retrouve la même).
-- Le bouton 🔀 Disposition tire une nouvelle organisation (avec confirmation si une partie est en cours).
-- Les sommets (cartes du haut des piles) se partagent un bonus de 1500 points ; la feuille Google reçoit au plus 3 sommets.
+- Chaque partie a un tableau différent de 28 cartes, posées sur une grille fine (demi-carte) : une carte peut être à cheval sur 1 à 4 cartes.
+- 7 formes (îlots, losange, anneau, tour, diagonale, bande large, croix), parfois symétriques ; une nouvelle partie n'a jamais la même forme que la précédente.
+- La disposition vient de la graine : « Rejouer la même partie » la retrouve.
+- Le bouton 🔀 Disposition recommence avec un nouveau tableau (confirmation si une partie est en cours).
+- Les sommets (cartes qui n'en recouvrent aucune) se partagent un bonus de 1500 points ; la feuille Google reçoit au plus 3 sommets.

@@ -77,12 +77,14 @@
   }
 
   // ----- mesures : 10 colonnes + 1 carte de large -----
+  let decalage = 0;
   function mesurer() {
     const W = plateau.clientWidth || 340;
     const u = W / 10.2;          // largeur d'une colonne
     const w = u * 1.2;           // largeur d'une carte
     const h = w * 1.4;           // hauteur d'une carte (5:7)
-    plateau.style.height = (h * 0.5 * (partie ? partie.nbRangs + 1 : 5) + 2) + 'px';
+    plateau.style.height = (h * (partie ? partie.hauteur : 2.5) + 2) + 'px';
+    decalage = partie ? Math.max(0, (W - partie.largeur * w) / 2) : 0;
     return { u, w, h };
   }
 
@@ -94,8 +96,8 @@
       const visible = partie.exposee(c.id);
       const el = visible ? elCarte(c.carte, w) : elDos(w);
       el.classList.add('t');
-      el.style.left = (c.x * u) + 'px';
-      el.style.top = (c.y * 0.5 * h) + 'px';
+      el.style.left = (decalage + c.px * w) + 'px';
+      el.style.top = (c.py * h) + 'px';
       el.dataset.id = c.id;
       if (visible && aide && partie.jouable(c.id)) el.classList.add('jouable');
       if (c.cadenas) el.appendChild(elIcone('cadenas'));
@@ -219,7 +221,12 @@
   function nouvelle(graine) {   // graine donnée = on rejoue exactement la même donne
     $('voile').hidden = true;
     remplirNiveaux();
-    partie = new Partie({ graine: typeof graine === 'number' ? graine : undefined, niveau, horloge: () => Math.round(tempsEcoule()) });
+    const fixe = typeof graine === 'number';
+    const avant = partie ? partie.style.split(' ')[0] : null;
+    let essai = 0;
+    do {   // nouvelle donne : on évite la même forme de tableau que la partie précédente
+      partie = new Partie({ graine: fixe ? graine : undefined, niveau, horloge: () => Math.round(tempsEcoule()) });
+    } while (!fixe && partie.style.split(' ')[0] === avant && ++essai < 30);
     demarrerChrono();
     message(descriptionNiveau(niveau));
     dessiner(false);
