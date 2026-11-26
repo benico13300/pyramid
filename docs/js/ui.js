@@ -45,7 +45,7 @@
       <b>Réserve</b> : touche l'emplacement vide pour y ranger la carte active (une carte de la pioche la remplace) ; touche la carte rangée pour la ramener en jeu.<br>
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
-      <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte.
+      <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte et compte comme une carte dans la série.
       <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour gagner. Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
     <div id="voile" class="voile" hidden></div>`;
 
@@ -179,7 +179,11 @@
   $('pioche').addEventListener('click', () => { if (partie.piocher()) { message(''); apres(true); } });
   $('annuler').addEventListener('click', () => { if (partie.annuler()) { message(''); dessiner(false); } });
   $('joker').addEventListener('click', () => {
-    if (partie.utiliserJoker()) { message('★ Joker joué : il se pose sur n\'importe quelle carte.'); apres(true); }
+    const r = partie.utiliserJoker();
+    if (r) {
+      message('★ Joker joué : il compte dans ta série.' + (r.chainesBrisees ? ' 💥 Les chaînes sont brisées !' : ''));
+      apres(true);
+    }
   });
   $('reserve').addEventListener('click', () => {
     if (partie.reserve) {

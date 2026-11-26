@@ -265,7 +265,7 @@ class Partie {
   }
 
   // Joker de départ (ou gagné) : il devient la carte active et se joue sur n'importe quelle carte.
-  // La série est conservée.
+  // Il compte comme une carte dans la série (donc pour briser les chaînes), sans rapporter de points.
   utiliserJoker() {
     if (this.etat !== 'en_cours' || this.jokers <= 0 || this.active.joker) return false;
     this._instantane();
@@ -273,9 +273,16 @@ class Partie {
     const j = new Carte(0, 'joker');
     j.depart = true;                         // joker venu de la réserve de jokers (pas du tableau)
     this.defausse.push(j);
+    this.serie++;
+    this.serieMax = Math.max(this.serieMax, this.serie);
+    let chainesBrisees = false;
+    if (this.chainesActives && this.serie >= this.longueurChaine) {
+      this.cases.forEach(d => { d.chaine = false; });
+      chainesBrisees = true;
+    }
     this.nbCoups++;
     this._verifierFin();
-    return true;
+    return { chainesBrisees };
   }
 
   // Pioche une carte : elle devient la carte active, et la série retombe à 0
