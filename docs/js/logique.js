@@ -66,15 +66,15 @@ const POINTS = { carte: 100, sommet: 500, pioche: 100 };
 // à enchaîner pour briser les chaînes, et moins de jokers et de cartes bonus (bleues / vertes).
 //   chaines / cadenas : obstacles sur le tableau (autant de clés que de cadenas)
 //   jokers : jokers posés sur le tableau   bleus / verts : cartes bonus
-//   serie : nombre de cartes d'affilée pour briser les chaînes
+//   serie : nombre de cartes d'affilée pour briser les chaînes (3 au plus)
 const NB_NIVEAUX = 5;
 const NIVEAUX = [
   null,
   { nom: 'Facile',         chaines: 1, cadenas: 1, jokers: 2, bleus: 3, verts: 3, serie: 2 },
   { nom: 'Moyen',          chaines: 2, cadenas: 2, jokers: 2, bleus: 2, verts: 2, serie: 3 },
-  { nom: 'Difficile',      chaines: 3, cadenas: 3, jokers: 1, bleus: 2, verts: 1, serie: 4 },
-  { nom: 'Très difficile', chaines: 4, cadenas: 3, jokers: 1, bleus: 1, verts: 1, serie: 5 },
-  { nom: 'Expert',         chaines: 6, cadenas: 4, jokers: 0, bleus: 1, verts: 0, serie: 6 }
+  { nom: 'Difficile',      chaines: 3, cadenas: 3, jokers: 1, bleus: 2, verts: 1, serie: 3 },
+  { nom: 'Très difficile', chaines: 4, cadenas: 3, jokers: 1, bleus: 1, verts: 1, serie: 3 },
+  { nom: 'Expert',         chaines: 6, cadenas: 4, jokers: 0, bleus: 1, verts: 0, serie: 3 }
 ];
 
 function configNiveau(n) {

@@ -2,7 +2,7 @@
    Stratégie : on sert la copie en cache tout de suite, et on la met à jour
    en arrière-plan (la nouvelle version apparaît au lancement suivant).
    Pour forcer une mise à jour : changer VERSION. */
-const VERSION = 'tripeaks-v9';
+const VERSION = 'tripeaks-v10';
 const FICHIERS = [
   './', 'index.html', 'css/style.css', 'manifest.json',
   'js/config.js', 'js/logique.js', 'js/cartes.js', 'js/api.js', 'js/ui.js',

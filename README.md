@@ -40,6 +40,6 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 
 ## 5 niveaux de difficulté
 - Niveau 1 (Facile) : peu de chaînes et de cadenas, beaucoup de jokers et de cartes bonus bleues / vertes.
-- Plus on monte, plus il y a de chaînes et de cadenas, et plus la série pour briser les chaînes est longue (2 cartes au niveau 1, 6 au niveau 5), avec de moins en moins de jokers et de cartes bonus. Le niveau 5 (Expert) n'a plus de carte verte ni de joker sur le tableau.
+- Plus on monte, plus il y a de chaînes et de cadenas, et la série pour briser les chaînes est de 2 cartes au niveau 1 puis de 3 cartes aux niveaux suivants, avec de moins en moins de jokers et de cartes bonus. Le niveau 5 (Expert) n'a plus de carte verte ni de joker sur le tableau.
 - Quand tu perds, tu peux rejouer exactement la même partie (même donne, mêmes obstacles).
 - Mise à jour : remplacer les fichiers de `docs/`, sans écraser `docs/js/config.js` (il contient ton adresse `/exec`).
