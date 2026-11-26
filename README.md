@@ -38,7 +38,8 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 ## Tester la logique sans écran
 
 
-## Niveaux et obstacles (v2)
-- Niveau 1 : TriPeaks classique. Niveau 2 : chaînes. Niveau 3 : cadenas + clés. Niveau 4 : joker. Niveau 5+ : tout ensemble, de plus en plus dur.
-- Difficulté = longueur de série pour briser les chaînes : Simple 2, Moyen 4, Difficile 6.
-- Mise à jour de la v1 : remplacer les fichiers de `docs/` (et `Code.gs` + « Nouvelle version » du déploiement). Le fichier `docs/js/config.js` reste celui qui contient ton adresse `/exec` : ne pas l'écraser.
+## 5 niveaux de difficulté
+- Niveau 1 (Facile) : peu de chaînes et de cadenas, beaucoup de jokers et de cartes bonus bleues / vertes.
+- Plus on monte, plus il y a de chaînes et de cadenas, et plus la série pour briser les chaînes est longue (2 cartes au niveau 1, 6 au niveau 5), avec de moins en moins de jokers et de cartes bonus. Le niveau 5 (Expert) n'a plus de carte verte ni de joker sur le tableau.
+- Quand tu perds, tu peux rejouer exactement la même partie (même donne, mêmes obstacles).
+- Mise à jour : remplacer les fichiers de `docs/`, sans écraser `docs/js/config.js` (il contient ton adresse `/exec`).

@@ -62,51 +62,42 @@ const RANGEES = [
 
 const POINTS = { carte: 100, sommet: 500, pioche: 100 };
 
-// Difficulté = longueur de la série à enchaîner pour briser les chaînes
-const DIFFICULTES = {
-  simple:    { nom: 'Simple',    chaine: 2 },
-  moyen:     { nom: 'Moyen',     chaine: 4 },
-  difficile: { nom: 'Difficile', chaine: 6 }
-};
+// 5 niveaux de difficulté. Plus on monte : plus de chaînes et de cadenas, une série plus longue
+// à enchaîner pour briser les chaînes, et moins de jokers et de cartes bonus (bleues / vertes).
+//   chaines / cadenas : obstacles sur le tableau (autant de clés que de cadenas)
+//   jokers : jokers posés sur le tableau   bleus / verts : cartes bonus
+//   serie : nombre de cartes d'affilée pour briser les chaînes
+const NB_NIVEAUX = 5;
+const NIVEAUX = [
+  null,
+  { nom: 'Facile',         chaines: 1, cadenas: 1, jokers: 2, bleus: 3, verts: 3, serie: 2 },
+  { nom: 'Moyen',          chaines: 2, cadenas: 2, jokers: 2, bleus: 2, verts: 2, serie: 3 },
+  { nom: 'Difficile',      chaines: 3, cadenas: 3, jokers: 1, bleus: 2, verts: 1, serie: 4 },
+  { nom: 'Très difficile', chaines: 4, cadenas: 3, jokers: 1, bleus: 1, verts: 1, serie: 5 },
+  { nom: 'Expert',         chaines: 6, cadenas: 4, jokers: 0, bleus: 1, verts: 0, serie: 6 }
+];
 
-// Ce que chaque niveau ajoute : chaînes, cadenas (+ autant de clés), jokers sur le plateau
 function configNiveau(n) {
-  n = Math.max(1, Math.floor(n) || 1);
-  const T = [
-    null,
-    { chaines: 0, cadenas: 0, jokers: 0 },   // 1 : le TriPeaks classique
-    { chaines: 3, cadenas: 0, jokers: 0 },   // 2 : les chaînes
-    { chaines: 0, cadenas: 2, jokers: 0 },   // 3 : cadenas et clés
-    { chaines: 3, cadenas: 0, jokers: 1 },   // 4 : le joker
-    { chaines: 3, cadenas: 2, jokers: 1 }    // 5 : tout ensemble
-  ];
-  // Cartes bonus (fond bleu = un joker de plus, fond vert = 5 cartes de plus en pioche)
-  const bonus = { bleus: n >= 5 ? 2 : 1, verts: 1 };
-  if (n < T.length) return { ...T[n], ...bonus };
-  const e = n - 5;                            // au-delà : de plus en plus d'obstacles
-  return { chaines: Math.min(3 + e, 6), cadenas: Math.min(2 + Math.floor(e / 2), 4), jokers: Math.min(1 + Math.floor(e / 3), 2), ...bonus };
+  n = Math.min(NB_NIVEAUX, Math.max(1, Math.floor(n) || 1));
+  return { ...NIVEAUX[n] };
+}
+
+function descriptionNiveau(n) {
+  const c = configNiveau(n);
+  return `${c.nom} : 🔗 ${c.chaines} (série de ${c.serie}) · 🔒 ${c.cadenas} · ★ ${c.jokers} · 🟦 ${c.bleus} · 🟩 ${c.verts}`;
 }
 
 const NB_CARTES_PACK = 5;                     // cartes ajoutées à la pioche par une carte verte
-
-function descriptionNiveau(n, difficulte) {
-  const c = configNiveau(n), L = DIFFICULTES[difficulte].chaine, t = [];
-  if (c.chaines) t.push(`🔗 ${c.chaines} chaînes : enchaîne ${L} cartes d'affilée pour les briser`);
-  if (c.cadenas) t.push(`🔒 ${c.cadenas} cadenas : il faut une 🗝 (cachée sur une carte) pour chacun`);
-  if (c.jokers) t.push(`★ ${c.jokers} joker : il se joue sur n'importe quelle carte`);
-  t.push(`🟦 carte bleue : un joker de plus`);
-  t.push(`🟩 carte verte : +${NB_CARTES_PACK} cartes en pioche`);
-  return (t.length > 2 ? '' : 'Dégage les 3 sommets · ') + t.join(' · ');
-}
 
 class Partie {
   constructor(options = {}) {
     this.graine = options.graine ?? Math.floor(Math.random() * 2147483647);
     this.bouclage = options.bouclage ?? true;
-    this.niveau = options.niveau ?? 1;
-    this.difficulte = DIFFICULTES[options.difficulte] ? options.difficulte : 'simple';
-    this.longueurChaine = DIFFICULTES[this.difficulte].chaine;
-    this.config = configNiveau(this.niveau);
+    this.config = configNiveau(options.niveau ?? 1);
+    this.niveau = Math.min(NB_NIVEAUX, Math.max(1, Math.floor(options.niveau ?? 1) || 1));
+    // Ancien nom (3 paliers) gardé pour la feuille Google : niveaux 1-2 simple, 3-4 moyen, 5 difficile
+    this.difficulte = this.niveau <= 2 ? 'simple' : this.niveau <= 4 ? 'moyen' : 'difficile';
+    this.longueurChaine = this.config.serie;
     const cartes = melanger(paquet52(), this.graine);
 
     this.cases = [];
@@ -352,5 +343,5 @@ class Partie {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, DIFFICULTES, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
+  module.exports = { RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
 }

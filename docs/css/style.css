@@ -117,3 +117,5 @@ button:disabled{opacity:.4;cursor:default}
 .badge-joker{background:#2f9a55;color:#fff}
 .face.bonus-bleu{background:linear-gradient(160deg,#cfe9ff,#6db4f0 60%,#3b8fd6);box-shadow:0 2px 4px #0009, inset 0 0 0 1px #1d5fa3}
 .face.bonus-vert{background:linear-gradient(160deg,#d6f5cc,#7fd36b 60%,#3fae45);box-shadow:0 2px 4px #0009, inset 0 0 0 1px #1f7a2c}
+
+.gros-bouton.secondaire{background:none;color:var(--or);border:1px solid #c8932a99;margin-top:8px}

@@ -37,10 +37,6 @@
     <div class="options">
       <label><input type="checkbox" id="optBoucle" checked> Bouclage As ↔ Roi</label>
       <label><input type="checkbox" id="optAide"> Surligner les coups</label>
-      <label>Difficulté <select id="optDiff">
-        <option value="simple">Simple (chaînes : 2)</option>
-        <option value="moyen">Moyen (chaînes : 4)</option>
-        <option value="difficile">Difficile (chaînes : 6)</option></select></label>
       <label>Niveau <select id="optNiveau"></select></label>
     </div>
     <p class="regle">Joue une carte libre <b>juste au-dessus ou en dessous</b> de la carte active.
@@ -50,7 +46,7 @@
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
       <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte.
-      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour passer au niveau suivant.</p>
+      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour gagner. Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
     <div id="voile" class="voile" hidden></div>`;
 
   const $ = id => document.getElementById(id);
@@ -59,17 +55,13 @@
   const TP = 72;                              // largeur des cartes des piles
   let aide = false;                           // « Surligner les coups » est désactivé par défaut
   let bouclage = true;
-  const NIVEAUX_MAX = 20;
-  let niveau = Math.max(1, Number(API.reglage('niveau', 1)) || 1);
-  let difficulte = API.reglage('diff', 'simple');
-  if (!DIFFICULTES[difficulte]) difficulte = 'simple';
+  let niveau = Math.min(NB_NIVEAUX, Math.max(1, Number(API.reglage('niveau', 1)) || 1));
 
   function message(texte) { $('msg').textContent = texte || ''; }
 
-  function remplirNiveaux() {
-    const max = Math.max(NIVEAUX_MAX, niveau);   // tous les niveaux sont disponibles dès le départ
-    $('optNiveau').replaceChildren(...Array.from({ length: max }, (_, i) =>
-      Object.assign(document.createElement('option'), { value: i + 1, textContent: i + 1 })));
+  function remplirNiveaux() {   // les 5 niveaux sont tous accessibles dès le départ
+    $('optNiveau').replaceChildren(...Array.from({ length: NB_NIVEAUX }, (_, i) =>
+      Object.assign(document.createElement('option'), { value: i + 1, textContent: `${i + 1} – ${NIVEAUX[i + 1].nom}` })));
     $('optNiveau').value = niveau;
   }
 
@@ -147,7 +139,7 @@
     $('se').textContent = partie.serie;
     $('pi').textContent = partie.pioche.length;
     $('re').textContent = Math.max(API.record(), partie.score);
-    $('niv').textContent = partie.niveau;
+    $('niv').textContent = `${partie.niveau} · ${partie.config.nom}`;
     const e = [];
     if (partie.config.chaines) e.push(partie.chainesActives ? `🔗 série ${partie.serie}/${partie.longueurChaine}` : '🔗 brisées');
     if (partie.config.cadenas) e.push(`🔒 ${partie.nbCadenas} · 🗝 ${partie.cles}`);
@@ -197,21 +189,19 @@
       apres(true);
     }
   });
-  $('optDiff').value = difficulte;
-  $('optDiff').addEventListener('change', e => { difficulte = e.target.value; API.regler('diff', difficulte); nouvelle(); });
   $('optNiveau').addEventListener('change', e => { niveau = Number(e.target.value); API.regler('niveau', niveau); nouvelle(); });
-  $('nouvelle').addEventListener('click', nouvelle);
+  $('nouvelle').addEventListener('click', () => nouvelle());
   $('optBoucle').addEventListener('change', e => { bouclage = e.target.checked; partie.bouclage = bouclage; dessiner(false); });
   $('optAide').addEventListener('change', e => { aide = e.target.checked; dessiner(false); });
   $('pseudo').value = (API.pseudo() === 'Joueur' ? '' : API.pseudo());
   $('pseudo').addEventListener('change', e => API.pseudo(e.target.value));
   window.addEventListener('resize', () => partie && dessiner(false));
 
-  function nouvelle() {
+  function nouvelle(graine) {   // graine donnée = on rejoue exactement la même donne
     $('voile').hidden = true;
     remplirNiveaux();
-    partie = new Partie({ bouclage, niveau, difficulte });
-    message(descriptionNiveau(niveau, difficulte));
+    partie = new Partie({ graine: typeof graine === 'number' ? graine : undefined, bouclage, niveau });
+    message(descriptionNiveau(niveau));
     dessiner(false);
     if (partie.etat !== 'en_cours') terminer();
   }
@@ -228,17 +218,19 @@
         <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/3${gagne ? ' · Bonus pioche : ' + partie.bonusFinal : ''}</p>
         <p id="etatSauv" class="detail">Enregistrement…</p>
         <ol id="top" class="top"></ol>
-        <button id="rejouer" class="gros-bouton">${gagne ? `Niveau ${partie.niveau + 1} ➜` : `Réessayer le niveau ${partie.niveau}`}</button>
-        ${!gagne && partie.niveau > 1 ? '<button id="debut" class="lien">Recommencer au niveau 1</button>' : ''}
+        ${gagne
+          ? `<button id="rejouer" class="gros-bouton">${partie.niveau < NB_NIVEAUX ? `Niveau ${partie.niveau + 1} ➜` : 'Rejouer le niveau ' + partie.niveau}</button>`
+          : `<button id="memeDonne" class="gros-bouton">↻ Rejouer la même partie</button>
+             <button id="rejouer" class="gros-bouton secondaire">Nouvelle partie (niveau ${partie.niveau})</button>`}
       </div>`;
+    const graineJouee = partie.graine;
     if (gagne) {   // le niveau suivant est débloqué et mémorisé tout de suite
-      niveau = partie.niveau + 1;
+      niveau = Math.min(NB_NIVEAUX, partie.niveau + 1);
       API.regler('niveau', niveau);
-      API.regler('niveau_max', Math.max(Number(API.reglage('niveau_max', 1)) || 1, niveau));
     }
-    $('rejouer').addEventListener('click', nouvelle);
-    const debut = $('debut');
-    if (debut) debut.addEventListener('click', () => { niveau = 1; API.regler('niveau', 1); nouvelle(); });
+    $('rejouer').addEventListener('click', () => nouvelle());
+    const meme = $('memeDonne');
+    if (meme) meme.addEventListener('click', () => nouvelle(graineJouee));
 
     const res = await API.sauver(partie);
     $('etatSauv').textContent = {
