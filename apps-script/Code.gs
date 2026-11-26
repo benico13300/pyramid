@@ -9,7 +9,8 @@
  */
 
 const NOM_FEUILLE = 'scores';
-const ENTETES = ['date', 'joueur_id', 'pseudo', 'score', 'serie_max', 'sommets', 'gagne', 'graine'];
+const ENTETES = ['date', 'joueur_id', 'pseudo', 'score', 'serie_max', 'sommets', 'gagne', 'graine', 'niveau', 'difficulte'];
+const DIFFICULTES = ['simple', 'moyen', 'difficile'];
 const SCORE_MAX = 100000;      // un score plus grand est forcément truqué
 const DELAI_MIN_SECONDES = 5;  // un même joueur ne peut pas enregistrer plus vite
 
@@ -41,6 +42,10 @@ function doPost(e) {
     if (!(serieMax >= 0 && serieMax <= 28)) return json_({ ok: false, erreur: 'série invalide' });
     if (!(sommets >= 0 && sommets <= 3)) return json_({ ok: false, erreur: 'sommets invalides' });
     if (!/^[A-Za-z0-9-]{8,64}$/.test(joueurId)) return json_({ ok: false, erreur: 'joueur invalide' });
+    const niveau = Math.floor(Number(d.niveau || 1));
+    const difficulte = String(d.difficulte || 'simple');
+    if (!(niveau >= 1 && niveau <= 99)) return json_({ ok: false, erreur: 'niveau invalide' });
+    if (DIFFICULTES.indexOf(difficulte) < 0) return json_({ ok: false, erreur: 'difficulté invalide' });
 
     // 2. limiter le rythme
     const cache = CacheService.getScriptCache();
@@ -53,7 +58,7 @@ function doPost(e) {
     try {
       feuille_().appendRow([
         new Date(), joueurId, nettoyer_(d.pseudo), score, serieMax, sommets,
-        d.gagne === true, String(d.graine || '')
+        d.gagne === true, String(d.graine || ''), niveau, difficulte
       ]);
     } finally {
       verrou.releaseLock();
@@ -74,7 +79,12 @@ function feuille_() {
     id = ss.getId();
     props.setProperty('SHEET_ID', id);
   }
-  return SpreadsheetApp.openById(id).getSheetByName(NOM_FEUILLE);
+  const feuille = SpreadsheetApp.openById(id).getSheetByName(NOM_FEUILLE);
+  // Ancienne feuille (8 colonnes) : on ajoute les en-têtes niveau et difficulte
+  if (feuille.getLastColumn() < ENTETES.length) {
+    feuille.getRange(1, 1, 1, ENTETES.length).setValues([ENTETES]);
+  }
+  return feuille;
 }
 
 function meilleurs_(n) {

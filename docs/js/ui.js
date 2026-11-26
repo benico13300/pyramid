@@ -54,6 +54,7 @@
   let partie = null;
   let aide = true;
   let bouclage = true;
+  const NIVEAUX_MAX = 20;
   let niveau = Math.max(1, Number(API.reglage('niveau', 1)) || 1);
   let difficulte = API.reglage('diff', 'simple');
   if (!DIFFICULTES[difficulte]) difficulte = 'simple';
@@ -61,7 +62,7 @@
   function message(texte) { $('msg').textContent = texte || ''; }
 
   function remplirNiveaux() {
-    const max = Math.max(Number(API.reglage('niveau_max', 1)) || 1, niveau);
+    const max = Math.max(NIVEAUX_MAX, niveau);   // tous les niveaux sont disponibles dès le départ
     $('optNiveau').replaceChildren(...Array.from({ length: max }, (_, i) =>
       Object.assign(document.createElement('option'), { value: i + 1, textContent: i + 1 })));
     $('optNiveau').value = niveau;
