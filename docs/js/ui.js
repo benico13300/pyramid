@@ -33,6 +33,7 @@
     <div class="actions">
       <button id="annuler">↶ Annuler</button>
       <button id="nouvelle">⟳ Nouvelle partie</button>
+      <button id="dispo" title="Nouvelle disposition des cartes">🔀 Disposition</button>
     </div>
     <div class="options">
       <label><input type="checkbox" id="optAide"> Surligner les coups</label>
@@ -40,12 +41,12 @@
     </div>
     <p class="regle">Joue une carte libre <b>juste au-dessus ou en dessous</b> de la carte active.
       Série = cartes jouées d'affilée sans piocher : chaque carte rapporte 100 × la série,
-      +500 par sommet dégagé, +100 par carte restant en pioche si tu gagnes.<br>
+      +1500 à partager entre les sommets (cartes du haut des piles) dégagés, +50 par carte restant en pioche si tu gagnes.<br>
       <b>Réserve</b> : touche l'emplacement vide pour y ranger la carte active (une carte de la pioche la remplace) ; touche la carte rangée pour la ramener en jeu.<br>
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
       <b>★ Joker</b> : tu en as un au départ (à gauche de la pioche) ; touche-le pour le poser, il se joue sur n'importe quelle carte et compte comme une carte dans la série.
-      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. Vide les 3 sommets pour gagner : il te reste des bonus pour chaque joker, chaque carte de pioche et le temps gagné (moins de 10 minutes). Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
+      <b>🟦 Carte bleue</b> : la jouer te donne un joker de plus. <b>🟩 Carte verte</b> : la jouer ajoute 5 cartes à la pioche. À chaque partie, les cartes sont empilées autrement ; 🔀 <b>Disposition</b> en tire une nouvelle. Vide le tableau pour gagner : il te reste des bonus pour chaque joker, chaque carte de pioche et le temps gagné (moins de 10 minutes). Niveau 1 = facile, niveau 5 = très dur ; si tu perds, tu peux rejouer exactement la même partie.</p>
     <div id="voile" class="voile" hidden></div>`;
 
   const $ = id => document.getElementById(id);
@@ -81,7 +82,7 @@
     const u = W / 10.2;          // largeur d'une colonne
     const w = u * 1.2;           // largeur d'une carte
     const h = w * 1.4;           // hauteur d'une carte (5:7)
-    plateau.style.height = (h * 2.5 + 2) + 'px';
+    plateau.style.height = (h * 0.5 * (partie ? partie.nbRangs + 1 : 5) + 2) + 'px';
     return { u, w, h };
   }
 
@@ -94,7 +95,7 @@
       const el = visible ? elCarte(c.carte, w) : elDos(w);
       el.classList.add('t');
       el.style.left = (c.x * u) + 'px';
-      el.style.top = (c.rangee * 0.5 * h) + 'px';
+      el.style.top = (c.y * 0.5 * h) + 'px';
       el.dataset.id = c.id;
       if (visible && aide && partie.jouable(c.id)) el.classList.add('jouable');
       if (c.cadenas) el.appendChild(elIcone('cadenas'));
@@ -205,6 +206,11 @@
   });
   $('optNiveau').addEventListener('change', e => { niveau = Number(e.target.value); API.regler('niveau', niveau); nouvelle(); });
   $('nouvelle').addEventListener('click', () => nouvelle());
+  $('dispo').addEventListener('click', () => {      // nouvelle organisation des cartes sur la table
+    if (partie && partie.etat === 'en_cours' && partie.nbCoups > 0 &&
+        !confirm('Abandonner cette partie et changer la disposition des cartes ?')) return;
+    nouvelle();
+  });
   $('optAide').addEventListener('change', e => { aide = e.target.checked; dessiner(false); });
   $('pseudo').value = (API.pseudo() === 'Joueur' ? '' : API.pseudo());
   $('pseudo').addEventListener('change', e => API.pseudo(e.target.value));
@@ -230,7 +236,7 @@
       <div class="boite" role="dialog" aria-modal="true">
         <h2>${gagne ? `🏆 Niveau ${partie.niveau} réussi !` : `Niveau ${partie.niveau} : plus de coups possibles`}</h2>
         <p class="gros">${partie.score} points</p>
-        <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/3 · Temps : ${formatTemps(partie.temps)}</p>
+        <p class="detail">Meilleure série : ${partie.serieMax} · Sommets : ${partie.sommets}/${partie.nbSommets} · Temps : ${formatTemps(partie.temps)}</p>
         ${gagne ? `<ul class="bonus">
           <li><span>Points de jeu</span><b>${partie.pointsJeu}</b></li>
           <li><span>Jokers restants (${partie.jokers})</span><b>+${partie.bonusJokers}</b></li>

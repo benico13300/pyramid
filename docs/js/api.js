@@ -59,7 +59,7 @@ const API = (() => {
       pseudo: pseudo(),
       score: partie.score,
       serieMax: partie.serieMax,
-      sommets: partie.sommets,
+      sommets: Math.min(3, partie.sommets),   // la feuille Google accepte 0 à 3
       gagne: partie.etat === 'gagne',
       graine: partie.graine,
       temps: partie.temps,

@@ -52,3 +52,9 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 - Le chrono démarre avec la partie et se met en pause quand la page est masquée.
 - L'enregistrement ne bloque pas le bouton « Rejouer » : le score est d'abord placé dans une file locale puis envoyé ; rien n'est perdu si une nouvelle partie démarre.
 - Le Sheet reçoit deux colonnes en plus : `temps_s` et `points_jeu`. Après avoir mis à jour `Code.gs`, faire « Déployer > Gérer les déploiements > Nouvelle version ».
+
+## Dispositions aléatoires
+
+- Chaque partie a une disposition différente des 28 cartes du tableau (générée à partir de la graine : « Rejouer la même partie » retrouve la même).
+- Le bouton 🔀 Disposition tire une nouvelle organisation (avec confirmation si une partie est en cours).
+- Les sommets (cartes du haut des piles) se partagent un bonus de 1500 points ; la feuille Google reçoit au plus 3 sommets.

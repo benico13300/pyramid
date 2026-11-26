@@ -60,10 +60,123 @@ const RANGEES = [
   [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 ];
 
+
+// ----- Dispositions aléatoires -----
+// Chaque case a une colonne x (0 à 9, par demi-pas) et un rang y (une demi-hauteur de carte par rang).
+// Les rangs pairs sont aux demi-colonnes (0,5 · 1,5 …), les rangs impairs aux colonnes entières :
+// une carte est donc toujours posée à cheval sur 2 cartes du rang du dessous, comme dans TriPeaks.
+const NB_CASES = 28;
+const LARGEUR = 10;
+
+function _dispoClassique() {
+  const cases = [];
+  RANGEES.forEach((xs, y) => xs.forEach(x => cases.push({ x, y })));
+  return cases;
+}
+
+function _cellules(y) {                       // colonnes possibles sur un rang
+  const dem = y % 2 === 0;
+  const out = [];
+  for (let i = 0; i < LARGEUR - (dem ? 1 : 0); i++) out.push(dem ? i + 0.5 : i);
+  return out;
+}
+
+function _tenterDispo(r) {
+  const nbRangs = 3 + Math.floor(r() * 3);                       // 3 à 5 rangs
+  const symetrique = r() < 0.5;
+  const poids = Array.from({ length: nbRangs }, () => 0.6 + r());
+  const somme = poids.reduce((a, b) => a + b, 0);
+  const pris = new Set();
+  const cle = (x, y) => x + ',' + y;
+  const demi = (LARGEUR - 1) / 2;                                 // axe de symétrie (4,5)
+
+  for (let y = 0; y < nbRangs; y++) {
+    const cel = _cellules(y);
+    const cible = Math.max(2, Math.min(cel.length, Math.round(NB_CASES * poids[y] / somme)));
+    // on découpe en 1 à 3 paquets de cartes côte à côte, séparés par des trous
+    const zone = symetrique ? cel.filter(x => x < demi) : cel;
+    let n = symetrique ? Math.floor(cible / 2) : cible;
+    if (n > zone.length) n = zone.length;
+    const g = Math.max(1, Math.min(n, 1 + Math.floor(r() * 3)));
+    const tailles = Array(g).fill(1);
+    for (let i = g; i < n; i++) tailles[Math.floor(r() * g)]++;
+    let besoin = n + (g - 1);
+    if (besoin > zone.length) { tailles.length = 1; tailles[0] = n; besoin = n; }
+    let libre = zone.length - besoin;
+    let pos = 0;
+    for (let i = 0; i < tailles.length; i++) {
+      const avant = i === 0 ? Math.floor(r() * (libre + 1)) : 1 + Math.floor(r() * (libre + 1));
+      if (i === 0) libre -= avant; else libre -= (avant - 1);
+      pos += avant;
+      for (let k = 0; k < tailles[i]; k++) pris.add(cle(zone[pos + k], y));
+      pos += tailles[i];
+    }
+    if (symetrique) {
+      for (const x of zone) if (pris.has(cle(x, y))) pris.add(cle(2 * demi - x, y));
+      if (y % 2 === 0 && r() < 0.5 && cible % 2 === 1) pris.add(cle(demi, y));   // carte centrale
+    }
+  }
+
+  let liste = [...pris].map(s => { const [x, y] = s.split(',').map(Number); return { x, y }; });
+  const present = (x, y) => liste.some(c => c.x === x && c.y === y);
+  // ajuste le total à 28 cartes
+  let garde = 0;
+  while (liste.length > NB_CASES && garde++ < 200) liste.splice(Math.floor(r() * liste.length), 1);
+  while (liste.length < NB_CASES && garde++ < 400) {
+    const c = liste[Math.floor(r() * liste.length)];
+    const voisins = [[1, 0], [-1, 0], [0.5, 1], [-0.5, 1], [0.5, -1], [-0.5, -1]]
+      .map(([dx, dy]) => ({ x: c.x + dx, y: c.y + dy }))
+      .filter(v => v.y >= 0 && v.y < nbRangs && _cellules(v.y).includes(v.x) && !present(v.x, v.y));
+    if (voisins.length) liste.push(voisins[Math.floor(r() * voisins.length)]);
+  }
+  if (liste.length !== NB_CASES) return null;
+  const miny = Math.min(...liste.map(c => c.y));
+  liste.forEach(c => { c.y -= miny; });
+  liste.sort((a, b) => a.y - b.y || a.x - b.x);
+  return liste;
+}
+
+// Une disposition est jouable si elle a assez de cartes visibles au départ, de la profondeur
+// et au moins un sommet.
+function _dispoValide(liste) {
+  const cases = _relier(liste);
+  const exposees = cases.filter(c => c.prof === 0).length;
+  const profMax = Math.max(...cases.map(c => c.prof));
+  const sommets = cases.filter(c => c.sommet).length;
+  const hauts = cases.filter(c => c.prof >= 1).length;
+  return exposees >= 4 && exposees <= 13 && profMax >= 2 && profMax <= 4 && sommets >= 1 && hauts >= 10;
+}
+
+// Calcule qui couvre qui, la profondeur (0 = visible au départ) et les sommets.
+function _relier(liste) {
+  const cases = liste.map((p, id) => ({ id, rangee: p.y, y: p.y, x: p.x, enlevee: false, couvertePar: [],
+                                        chaine: false, cadenas: false, cle: false, bonus: null }));
+  for (const c of cases) {
+    c.couvertePar = cases.filter(d => d.y === c.y + 1 && Math.abs(d.x - c.x) < 1).map(d => d.id);
+  }
+  for (let i = cases.length - 1; i >= 0; i--) {
+    const c = cases[i];
+    c.prof = c.couvertePar.length ? 1 + Math.max(...c.couvertePar.map(d => cases[d].prof)) : 0;
+  }
+  const dessous = new Set();
+  cases.forEach(c => c.couvertePar.forEach(d => dessous.add(d)));
+  cases.forEach(c => { c.sommet = c.prof >= 1 && !dessous.has(c.id); });
+  return cases;
+}
+
+function genererDisposition(graine) {
+  const r = alea(graine + 31337);
+  for (let essai = 0; essai < 300; essai++) {
+    const l = _tenterDispo(r);
+    if (l && _dispoValide(l)) return l;
+  }
+  return _dispoClassique();
+}
+
 // Points : une carte vaut 100 × la série, un sommet +500.
 // À la victoire : bonus par joker et par carte restant en pioche, et bonus de temps
 // (TEMPS_POINTS points par seconde gagnée sous TEMPS_REF secondes).
-const POINTS = { carte: 100, sommet: 500, pioche: 50, joker: 300, tempsParSeconde: 5, tempsRef: 600 };
+const POINTS = { carte: 100, sommet: 500, sommetsTotal: 1500, pioche: 50, joker: 300, tempsParSeconde: 5, tempsRef: 600 };
 
 // 5 niveaux de difficulté. Plus on monte : plus de chaînes et de cadenas, une série plus longue
 // à enchaîner pour briser les chaînes, et moins de jokers et de cartes bonus (bleues / vertes).
@@ -103,22 +216,11 @@ class Partie {
     this.difficulte = this.niveau <= 2 ? 'simple' : this.niveau <= 4 ? 'moyen' : 'difficile';
     this.longueurChaine = this.config.serie;
     const cartes = melanger(paquet52(), this.graine);
-
-    this.cases = [];
-    let k = 0;
-    RANGEES.forEach((xs, rangee) => xs.forEach(x => {
-      this.cases.push({ id: k, rangee, x, carte: cartes[k], enlevee: false, couvertePar: [],
-                        chaine: false, cadenas: false, cle: false, bonus: null });
-      k++;
-    }));
-    // Une carte est couverte par les 2 cartes de la rangée du dessous qui la chevauchent
-    for (const c of this.cases) {
-      if (c.rangee < 3) {
-        c.couvertePar = this.cases
-          .filter(d => d.rangee === c.rangee + 1 && Math.abs(d.x - c.x) === 0.5)
-          .map(d => d.id);
-      }
-    }
+    const classique = (options.disposition ?? Partie.DISPOSITION_DEFAUT) === 'classique';
+    this.cases = _relier(classique ? _dispoClassique() : genererDisposition(this.graine));
+    this.cases.forEach((c, k) => { c.carte = cartes[k]; });
+    this.nbRangs = Math.max(...this.cases.map(c => c.y)) + 1;
+    this.nbSommets = this.cases.filter(c => c.sommet).length;
 
     this._placerObstacles();
 
@@ -156,7 +258,7 @@ class Partie {
       this.cases[id].carte = new Carte(0, 'joker');
     }
     // Cadenas : sur les 3 rangées du haut (jamais sur la rangée du bas, toujours visible au départ)
-    const hauts = libres.filter(id => this.cases[id].rangee < 3 && !this.cases[id].carte.joker);
+    const hauts = libres.filter(id => this.cases[id].prof >= 1 && !this.cases[id].carte.joker);
     const verrous = [];
     for (let i = 0; i < cfg.cadenas && hauts.length; i++) {
       const id = tirer(hauts);
@@ -168,7 +270,7 @@ class Partie {
     const interdits = new Set();
     const descendre = id => this.cases[id].couvertePar.forEach(d => { interdits.add(d); descendre(d); });
     verrous.forEach(descendre);
-    const candidates = libres.filter(id => !interdits.has(id) && !this.cases[id].carte.joker && this.cases[id].rangee >= 2);
+    const candidates = libres.filter(id => !interdits.has(id) && !this.cases[id].carte.joker && this.cases[id].prof <= 1);
     let nbCles = 0;
     while (nbCles < verrous.length && candidates.length) {
       const id = tirer(candidates);
@@ -253,8 +355,8 @@ class Partie {
       evenements.chainesBrisees = true;
     }
     let gain = POINTS.carte * this.serie;
-    const sommet = c.rangee === 0;
-    if (sommet) { this.sommets++; gain += POINTS.sommet; }
+    const sommet = c.sommet;
+    if (sommet) { this.sommets++; gain += Math.round(POINTS.sommetsTotal / this.nbSommets); }   // 1500 au total, quel que soit le nombre de sommets
     this.score += gain;
     this.nbCoups++;
     this._verifierFin();
@@ -363,6 +465,8 @@ class Partie {
   }
 }
 
+Partie.DISPOSITION_DEFAUT = 'aleatoire';   // 'classique' = les 3 pyramides fixes (tests)
+
 if (typeof module !== 'undefined') {
-  module.exports = { RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
+  module.exports = { genererDisposition, _relier, NB_CASES, RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
 }
