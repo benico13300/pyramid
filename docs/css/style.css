@@ -53,9 +53,9 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 .mot{position:absolute;left:0;right:0;bottom:.5em;text-align:center;font-weight:700;font-size:.55em;letter-spacing:.12em}
 .ico{position:absolute;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
 .ico svg{display:block;width:100%;height:auto}
-.ico.chaine{left:-6%;right:-6%;top:36%;transform:rotate(-14deg)}
-.ico.cadenas{width:36%;left:32%;top:26%}
-.ico.cle{width:58%;left:8%;top:40%;transform:rotate(-28deg)}
+.ico.chaine{left:2%;top:2%;width:62%}
+.ico.cadenas{left:4%;top:2%;width:34%}
+.ico.cle{left:3%;top:4%;width:44%;transform:rotate(-20deg)}
 .t.bloquee .corner,.t.bloquee .mid,.t.bloquee .art{opacity:.55}
 
 /* ---------- niveau, état ---------- */
