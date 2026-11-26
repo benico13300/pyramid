@@ -27,10 +27,11 @@
     <div class="base">
       <button id="pioche" class="pile" aria-label="Piocher une carte"></button>
       <div id="actif" class="pile" aria-label="Carte active"></div>
-      <div class="actions">
-        <button id="annuler">↶ Annuler</button>
-        <button id="nouvelle">⟳ Nouvelle partie</button>
-      </div>
+      <button id="reserve" class="pile reserve" aria-label="Réserve"></button>
+    </div>
+    <div class="actions">
+      <button id="annuler">↶ Annuler</button>
+      <button id="nouvelle">⟳ Nouvelle partie</button>
     </div>
     <div class="options">
       <label><input type="checkbox" id="optBoucle" checked> Bouclage As ↔ Roi</label>
@@ -44,6 +45,7 @@
     <p class="regle">Joue une carte libre <b>juste au-dessus ou en dessous</b> de la carte active.
       Série = cartes jouées d'affilée sans piocher : chaque carte rapporte 100 × la série,
       +500 par sommet dégagé, +100 par carte restant en pioche si tu gagnes.<br>
+      <b>Réserve</b> : touche l'emplacement vide pour y ranger la carte active (une carte de la pioche la remplace) ; touche la carte rangée pour la ramener en jeu.<br>
       <b>🔗 Chaîne</b> : la carte est bloquée jusqu'à ce que tu enchaînes assez de cartes d'affilée (selon la difficulté).
       <b>🔒 Cadenas</b> : il faut une <b>🗝 clé</b>, cachée sur une autre carte du tableau.
       <b>★ Joker</b> : il se joue sur n'importe quelle carte. Vide les 3 sommets pour passer au niveau suivant.</p>
@@ -111,6 +113,22 @@
     if (animer) actif.classList.add('pop');
     $('actif').replaceChildren(actif);
 
+    // réserve : emplacement vide (clic = y ranger la carte active) ou carte rangée (clic = la reprendre)
+    const rs = $('reserve');
+    if (partie.reserve) {
+      rs.replaceChildren(elCarte(partie.reserve, 84));
+      rs.classList.add('pleine');
+      rs.disabled = partie.etat !== 'en_cours';
+      rs.setAttribute('aria-label', 'Réserve : reprendre la carte');
+    } else {
+      const v = document.createElement('span');
+      v.className = 'vide'; v.textContent = 'Réserve';
+      rs.replaceChildren(v);
+      rs.classList.remove('pleine');
+      rs.disabled = partie.pioche.length === 0 || partie.etat !== 'en_cours';
+      rs.setAttribute('aria-label', 'Réserve vide : y ranger la carte active');
+    }
+
     // chiffres
     $('sc').textContent = partie.score;
     $('se').textContent = partie.serie;
@@ -153,6 +171,14 @@
 
   $('pioche').addEventListener('click', () => { if (partie.piocher()) { message(''); apres(true); } });
   $('annuler').addEventListener('click', () => { if (partie.annuler()) { message(''); dessiner(false); } });
+  $('reserve').addEventListener('click', () => {
+    if (partie.reserve) {
+      if (partie.reprendreReserve()) { message('↩ Carte reprise depuis la réserve.'); apres(true); }
+    } else if (partie.mettreEnReserve()) {
+      message('📥 Carte mise en réserve : une carte de la pioche la remplace (série remise à 0).');
+      apres(true);
+    }
+  });
   $('optDiff').value = difficulte;
   $('optDiff').addEventListener('change', e => { difficulte = e.target.value; API.regler('diff', difficulte); nouvelle(); });
   $('optNiveau').addEventListener('change', e => { niveau = Number(e.target.value); API.regler('niveau', niveau); nouvelle(); });

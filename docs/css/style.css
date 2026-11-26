@@ -74,13 +74,13 @@ select{font:inherit;font-size:.88rem;padding:4px 8px;border-radius:999px;border:
 @keyframes pop{from{transform:scale(1.18);opacity:.5}to{transform:scale(1);opacity:1}}
 
 /* ---------- pioche, carte active, boutons ---------- */
-.base{display:grid;grid-template-columns:auto auto 1fr;gap:16px;align-items:center;margin:22px 6px 10px}
+.base{display:flex;justify-content:center;align-items:center;gap:18px;margin:22px 6px 10px}
 .pile{position:relative;background:none;border:0;padding:0;display:block;min-width:84px;min-height:118px}
 button.pile{cursor:pointer}
 button.pile:disabled{opacity:.35;cursor:default}
 .badge{position:absolute;right:-6px;top:-8px;min-width:1.7em;padding:.1em .45em;border-radius:999px;
   background:var(--or);color:#2a1d0e;font:700 .85rem Georgia,serif;text-align:center;border:2px solid var(--fond)}
-.actions{display:flex;flex-direction:column;gap:8px}
+.actions{display:flex;justify-content:center;gap:10px;margin:4px 6px 8px}
 button{font:inherit;font-size:.95rem;padding:9px 12px;border-radius:999px;border:1px solid var(--or);
   background:transparent;color:var(--or);cursor:pointer}
 button:active:not(:disabled){background:#c8932a33}
@@ -104,3 +104,10 @@ button:disabled{opacity:.4;cursor:default}
 .gros-bouton{width:100%;padding:12px;font-size:1.05rem;background:var(--or);color:#2a1d0e;font-weight:700}
 
 .lien{width:100%;margin-top:8px;border:0;font-size:.9rem;text-decoration:underline;opacity:.85}
+
+/* ---------- réserve ---------- */
+.reserve{border-radius:calc(84px/9)}
+.reserve .vide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:.8rem;color:#9fd4ff;letter-spacing:.04em;border:2px dashed #5aa9e6;border-radius:calc(84px/9);
+  background:radial-gradient(circle at 50% 45%,#2c6fb066,#0b1a1700 75%);box-shadow:inset 0 0 14px #2a7fd055}
+.reserve.pleine .face{box-shadow:0 0 0 2px #5aa9e6,0 0 12px 2px #3d8fe0}

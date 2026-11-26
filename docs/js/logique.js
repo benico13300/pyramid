@@ -130,6 +130,7 @@ class Partie {
     this.nbCoups = 0;
     this.bonusFinal = 0;
     this.cles = 0;                           // clés ramassées et pas encore utilisées
+    this.reserve = null;                     // une carte mise de côté (une seule à la fois)
     this.etat = 'en_cours';                  // 'en_cours' | 'gagne' | 'perdu'
     this.historique = [];
     this._verifierFin();
@@ -198,9 +199,9 @@ class Partie {
     return !c.enlevee && c.couvertePar.every(i => this.cases[i].enlevee);
   }
 
-  _peutJouer(id) {
+  _peutJouer(id, ref = this.active) {
     return this.exposee(id) && !this.blocage(id) &&
-           this.cases[id].carte.estJouableSur(this.active, this.bouclage);
+           this.cases[id].carte.estJouableSur(ref, this.bouclage);
   }
 
   jouable(id) { return this.etat === 'en_cours' && this._peutJouer(id); }
@@ -214,7 +215,7 @@ class Partie {
       enlevees: this.cases.map(c => c.enlevee),
       pioche: this.pioche.slice(),
       defausse: this.defausse.slice(),
-      chaines: this.cases.map(c => c.chaine), cles: this.cles,
+      chaines: this.cases.map(c => c.chaine), cles: this.cles, reserve: this.reserve,
       score: this.score, serie: this.serie, serieMax: this.serieMax,
       sommets: this.sommets, nbCoups: this.nbCoups
     });
@@ -257,11 +258,36 @@ class Partie {
     return true;
   }
 
+  // Réserve : la carte active est rangée de côté, et une carte de la pioche la remplace.
+  // C'est comme piocher (la série retombe à 0), mais on garde la carte pour plus tard.
+  mettreEnReserve() {
+    if (this.etat !== 'en_cours' || this.reserve || this.pioche.length === 0) return false;
+    this._instantane();
+    this.reserve = this.defausse.pop();
+    this.defausse.push(this.pioche.pop());
+    this.serie = 0;
+    this.nbCoups++;
+    this._verifierFin();
+    return true;
+  }
+
+  // Ramener la carte de la réserve : elle redevient la carte active (la série est conservée).
+  reprendreReserve() {
+    if (this.etat !== 'en_cours' || !this.reserve) return false;
+    this._instantane();
+    this.defausse.push(this.reserve);
+    this.reserve = null;
+    this.nbCoups++;
+    this._verifierFin();
+    return true;
+  }
+
   annuler() {
     if (this.etat !== 'en_cours' || this.historique.length === 0) return false;
     const s = this.historique.pop();
     this.cases.forEach((c, i) => { c.enlevee = s.enlevees[i]; c.chaine = s.chaines[i]; });
     this.cles = s.cles;
+    this.reserve = s.reserve;
     this.pioche = s.pioche;
     this.defausse = s.defausse;
     this.score = s.score; this.serie = s.serie; this.serieMax = s.serieMax;
@@ -274,7 +300,8 @@ class Partie {
       this.etat = 'gagne';
       this.bonusFinal = POINTS.pioche * this.pioche.length;
       this.score += this.bonusFinal;
-    } else if (this.pioche.length === 0 && !this.cases.some(c => this._peutJouer(c.id))) {
+    } else if (this.pioche.length === 0 && !this.cases.some(c => this._peutJouer(c.id)) &&
+               !(this.reserve && this.cases.some(c => this._peutJouer(c.id, this.reserve)))) {
       this.etat = 'perdu';
     } else {
       this.etat = 'en_cours';
