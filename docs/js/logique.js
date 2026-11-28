@@ -65,7 +65,8 @@ const RANGEES = [
 // Les cartes sont posées sur une grille fine : un pas = une demi-carte, en largeur comme en hauteur
 // (gx 0 à 14, gy 0 à 6). Une carte posée à cheval peut donc recouvrir 1, 2, 3 ou 4 cartes.
 // L'ordre du tableau = l'ordre de pose : une carte recouvre celles qui la chevauchent et qui sont avant elle.
-const NB_CASES = 28;
+const NB_CASES = 28;                          // tableau classique (tests)
+const NB_MIN = 30, NB_VAR = 5;                 // tableau aléatoire : 30 à 34 cartes
 const VALID = { expMin: 8, expMax: 14, profMax: 4, couvMax: 4 };
 const GX_MAX = 14;
 const GY_MAX = 6;
@@ -113,7 +114,7 @@ const STYLES = {
 const NOMS_STYLES = Object.keys(STYLES);
 const STYLES_SYMETRIQUES = new Set(['losange', 'anneau', 'croix', 'ilots', 'tour']);
 
-function _tenterDispo(r, nom) {
+function _tenterDispo(r, nom, n) {
   const masque = STYLES[nom](r);
   const symetrique = STYLES_SYMETRIQUES.has(nom) && r() < 0.6 && nom !== 'tour' && nom !== 'ilots';
   const poses = [];
@@ -139,8 +140,8 @@ function _tenterDispo(r, nom) {
     for (const d of cands) { t -= d.p; if (t <= 0) return d.c; }
     return cands[cands.length - 1].c;
   };
-  while (poses.length < NB_CASES) {
-    if (symetrique) {
+  while (poses.length < n) {
+    if (symetrique && n - poses.length >= 2) {
       const c = tirer(6);                      // moitié gauche, puis on la reflète
       if (!c) return null;
       poses.push(c);
@@ -186,11 +187,14 @@ function _relier(liste) {
 }
 
 // Disposition tirée de la graine : { liste, style }. nomStyle force une forme (tests).
+function nbCartesTableau(graine) { return NB_MIN + Math.floor(alea(graine + 555)() * NB_VAR); }
+
 function genererDisposition(graine, nomStyle) {
   const r = alea(graine + 31337);
+  const n = nbCartesTableau(graine);
   const nom = nomStyle || NOMS_STYLES[Math.floor(r() * NOMS_STYLES.length)];
   for (let essai = 0; essai < 300; essai++) {
-    const d = _tenterDispo(r, nom);
+    const d = _tenterDispo(r, nom, n);
     if (d && _dispoValide(d.liste)) return d;
   }
   return _dispoClassique();
@@ -226,6 +230,10 @@ function descriptionNiveau(n) {
   return `${c.nom} : 🔗 ${c.chaines} (série de ${c.serie}) · 🔒 ${c.cadenas} · ★ ${c.jokers} · 🟦 ${c.bleus} · 🟩 ${c.verts}`;
 }
 
+// Couleurs des paires cadenas / clé : une clé n'ouvre que le cadenas de sa couleur
+const TEINTES = ['#3b7fd0', '#3fa34d', '#e0b020', '#d0453b'];
+const CARRES = ['🟦', '🟩', '🟨', '🟥'];
+
 const NB_CARTES_PACK = 5;                     // cartes ajoutées à la pioche par une carte verte
 
 class Partie {
@@ -250,7 +258,7 @@ class Partie {
 
     this._placerObstacles();
 
-    this.pioche = cartes.slice(28);          // 24 cartes
+    this.pioche = cartes.slice(this.cases.length);   // le reste du jeu
     this.defausse = [this.pioche.pop()];     // la carte de départ
     this.score = 0;
     this.serie = 0;
@@ -261,7 +269,7 @@ class Partie {
     this.bonusPioche = 0; this.bonusJokers = 0; this.bonusTemps = 0;
     this.pointsJeu = 0;                      // points avant les bonus de fin
     this.temps = 0;                          // temps de jeu en secondes, fixé à la fin
-    this.cles = 0;                           // clés ramassées et pas encore utilisées
+    this.mesCles = [];                       // couleurs des clés ramassées et pas encore utilisées
     this.reserve = null;                     // une carte mise de côté (une seule à la fois)
     this.jokers = 1;                         // joker de départ, à gauche de la pioche
     this.extra = 0;                          // cartes ajoutées à la pioche par les cartes vertes
@@ -290,6 +298,7 @@ class Partie {
       const id = tirer(hauts);
       libres.splice(libres.indexOf(id), 1);
       this.cases[id].cadenas = true;
+      this.cases[id].teinte = verrous.length % TEINTES.length;
       verrous.push(id);
     }
     // Clés : jamais cachées sous un cadenas (sinon la partie serait impossible)
@@ -302,6 +311,7 @@ class Partie {
       const id = tirer(candidates);
       libres.splice(libres.indexOf(id), 1);
       this.cases[id].cle = true;
+      this.cases[id].teinte = this.cases[verrous[nbCles]].teinte;   // même couleur que son cadenas
       nbCles++;
     }
     // Pas assez de place pour toutes les clés : on retire les cadenas en trop
@@ -317,6 +327,7 @@ class Partie {
     for (let i = 0; i < (cfg.verts || 0) && nues.length; i++) this.cases[tirer(nues)].bonus = 'vert';
   }
 
+  get cles() { return this.mesCles.length; }
   get chainesActives() { return this.cases.some(c => c.chaine && !c.enlevee); }
   get nbChaines() { return this.cases.filter(c => c.chaine && !c.enlevee).length; }
   get nbCadenas() { return this.cases.filter(c => c.cadenas && !c.enlevee).length; }
@@ -325,7 +336,7 @@ class Partie {
   blocage(id) {
     const c = this.cases[id];
     if (c.chaine) return 'chaine';
-    if (c.cadenas && this.cles <= 0) return 'cadenas';
+    if (c.cadenas && !this.mesCles.includes(c.teinte ?? 0)) return 'cadenas';
     return null;
   }
 
@@ -354,7 +365,7 @@ class Partie {
       enlevees: this.cases.map(c => c.enlevee),
       pioche: this.pioche.slice(),
       defausse: this.defausse.slice(),
-      chaines: this.cases.map(c => c.chaine), cles: this.cles, reserve: this.reserve,
+      chaines: this.cases.map(c => c.chaine), cles: this.mesCles.slice(), reserve: this.reserve,
       jokers: this.jokers, extra: this.extra,
       score: this.score, serie: this.serie, serieMax: this.serieMax,
       sommets: this.sommets, nbCoups: this.nbCoups
@@ -367,8 +378,8 @@ class Partie {
     this._instantane();
     const c = this.cases[id];
     const evenements = { cadenasOuvert: false, cleRamassee: false, chainesBrisees: false, jokerGagne: false, packGagne: false };
-    if (c.cadenas) { this.cles--; evenements.cadenasOuvert = true; }   // le cadenas consomme une clé
-    if (c.cle) { this.cles++; evenements.cleRamassee = true; }          // la clé est ramassée
+    if (c.cadenas) { this.mesCles.splice(this.mesCles.indexOf(c.teinte ?? 0), 1); evenements.cadenasOuvert = true; }   // le cadenas consomme une clé
+    if (c.cle) { this.mesCles.push(c.teinte ?? 0); evenements.cleRamassee = true; }          // la clé est ramassée
     c.enlevee = true;
     this.defausse.push(c.carte);
     if (c.bonus === 'bleu') { this.jokers++; evenements.jokerGagne = true; }
@@ -459,7 +470,7 @@ class Partie {
     if (this.etat !== 'en_cours' || this.historique.length === 0) return false;
     const s = this.historique.pop();
     this.cases.forEach((c, i) => { c.enlevee = s.enlevees[i]; c.chaine = s.chaines[i]; });
-    this.cles = s.cles;
+    this.mesCles = s.cles.slice();
     this.reserve = s.reserve;
     this.jokers = s.jokers; this.extra = s.extra;
     this.pioche = s.pioche;
@@ -494,5 +505,5 @@ class Partie {
 Partie.DISPOSITION_DEFAUT = 'aleatoire';   // 'classique' = les 3 pyramides fixes (tests)
 
 if (typeof module !== 'undefined') {
-  module.exports = { genererDisposition, _relier, VALID, NB_CASES, RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
+  module.exports = { genererDisposition, nbCartesTableau, _relier, VALID, NB_CASES, TEINTES, RANGS, FAMILLES, Carte, Partie, RANGEES, POINTS, NIVEAUX, NB_NIVEAUX, configNiveau, descriptionNiveau, NB_CARTES_PACK, alea, paquet52, melanger };
 }

@@ -55,8 +55,13 @@ Ouvre l'adresse dans **Safari**, puis **Partager > Sur l'écran d'accueil**.
 
 ## Dispositions aléatoires
 
-- Chaque partie a un tableau différent de 28 cartes, posées sur une grille fine (demi-carte) : une carte peut être à cheval sur 1 à 4 cartes.
+- Chaque partie a un tableau différent de 30 à 34 cartes, posées sur une grille fine (demi-carte) : une carte peut être à cheval sur 1 à 4 cartes.
 - 7 formes (îlots, losange, anneau, tour, diagonale, bande large, croix), parfois symétriques ; une nouvelle partie n'a jamais la même forme que la précédente.
 - La disposition vient de la graine : « Rejouer la même partie » la retrouve.
 - Le bouton 🔀 Disposition recommence avec un nouveau tableau (confirmation si une partie est en cours).
 - Les sommets (cartes qui n'en recouvrent aucune) se partagent un bonus de 1500 points ; la feuille Google reçoit au plus 3 sommets.
+
+## Cadenas et clés colorés
+
+- Chaque cadenas a une couleur (bleu, vert, jaune, rouge) ; la clé de la même couleur est cachée ailleurs sur le tableau et lui seule l'ouvre.
+- Les clés ramassées s'affichent en carrés de couleur dans la ligne d'info.

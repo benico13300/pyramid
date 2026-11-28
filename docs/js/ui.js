@@ -100,8 +100,8 @@
       el.style.top = (c.py * h) + 'px';
       el.dataset.id = c.id;
       if (visible && aide && partie.jouable(c.id)) el.classList.add('jouable');
-      if (c.cadenas) el.appendChild(elIcone('cadenas'));
-      if (c.cle && visible) el.appendChild(elIcone('cle'));
+      if (c.cadenas) el.appendChild(elIcone('verrou', c.teinte ?? 0));
+      if (c.cle && visible) el.appendChild(elIcone('cle', c.teinte ?? 0));
       if (c.chaine) el.appendChild(elIcone('chaine'));
       if (visible && partie.blocage(c.id)) el.classList.add('bloquee');
       if (visible && c.bonus) el.classList.add('bonus-' + c.bonus);
@@ -155,7 +155,7 @@
     $('niv').textContent = `${partie.niveau} · ${partie.config.nom}`;
     const e = [];
     if (partie.config.chaines) e.push(partie.chainesActives ? `🔗 série ${partie.serie}/${partie.longueurChaine}` : '🔗 brisées');
-    if (partie.config.cadenas) e.push(`🔒 ${partie.nbCadenas} · 🗝 ${partie.cles}`);
+    if (partie.config.cadenas) e.push(`🔒 ${partie.nbCadenas} · 🗝 ${partie.mesCles.map(t => CARRES[t % CARRES.length]).join('') || '0'}`);
     $('etat').textContent = e.join('   ');
     $('annuler').disabled = partie.etat !== 'en_cours' || partie.historique.length === 0;
   }
@@ -184,7 +184,7 @@
       apres(true);
     } else {
       if (bloc === 'chaine') message(`🔗 Chaîne : enchaîne ${partie.longueurChaine} cartes d'affilée (série : ${partie.serie}).`);
-      else if (bloc === 'cadenas') message('🔒 Il faut une clé 🗝 : ramasse-en une sur une autre carte.');
+      else if (bloc === 'cadenas') message(`🔒 Il faut la clé ${CARRES[(partie.cases[id].teinte ?? 0) % CARRES.length]} de la même couleur, cachée sur une autre carte.`);
       el.classList.add('non'); setTimeout(() => el.classList.remove('non'), 320);
     }
   });

@@ -102,10 +102,27 @@ function injecterDefs() {
     <path d="M11 22 V14 a9 9 0 0 1 18 0 V22" fill="none" stroke="#d9dde2" stroke-width="5" stroke-linecap="round"/>
     <rect x="4" y="21" width="32" height="25" rx="5" fill="#e0a526" stroke="#2a1d0e" stroke-width="3"/>
     <circle cx="20" cy="31" r="4" fill="#2a1d0e"/><rect x="18.3" y="32" width="3.4" height="8" rx="1.5" fill="#2a1d0e"/></symbol>
+  <symbol id="verrou" viewBox="0 0 50 70">
+    <g stroke-linecap="butt">
+      <line x1="9" y1="61" x2="41" y2="9" stroke="#1b2430" stroke-width="7.6"/>
+      <line x1="9" y1="61" x2="41" y2="9" style="stroke:var(--teinte,#3b7fd0)" stroke-width="5.8"/>
+      <line x1="9" y1="61" x2="41" y2="9" stroke="#b9c2cc" stroke-width="3"/>
+      <line x1="9" y1="61" x2="41" y2="9" stroke="#eef2f6" stroke-width=".9"/>
+    </g>
+    <g fill="none" stroke-linecap="round">
+      <g stroke="#1b2430" stroke-width="3.6"><ellipse cx="22" cy="5" rx="3.6" ry="2.1"/><ellipse cx="28.5" cy="5" rx="3.6" ry="2.1"/><ellipse cx="35" cy="5" rx="3.6" ry="2.1"/>
+        <ellipse cx="14" cy="65" rx="3.6" ry="2.1"/><ellipse cx="20.5" cy="65" rx="3.6" ry="2.1"/><ellipse cx="27" cy="65" rx="3.6" ry="2.1"/></g>
+      <g stroke="#cfd6de" stroke-width="1.7"><ellipse cx="22" cy="5" rx="3.6" ry="2.1"/><ellipse cx="28.5" cy="5" rx="3.6" ry="2.1"/><ellipse cx="35" cy="5" rx="3.6" ry="2.1"/>
+        <ellipse cx="14" cy="65" rx="3.6" ry="2.1"/><ellipse cx="20.5" cy="65" rx="3.6" ry="2.1"/><ellipse cx="27" cy="65" rx="3.6" ry="2.1"/></g>
+    </g>
+    <g id="vcad"><rect x="37" y="4" width="10" height="13" rx="2" fill="#7f8891" stroke="#1b2430" stroke-width="1.6"/>
+      <rect x="38" y="5" width="3" height="11" fill="#b6bec7"/><circle cx="43" cy="9.5" r="2" fill="#1b2430"/><rect x="42.2" y="10" width="1.6" height="4.2" fill="#1b2430"/></g>
+    <g transform="translate(-33 49)"><use href="#vcad"/></g>
+  </symbol>
   <symbol id="cle" viewBox="0 0 60 30">
     <g fill="none" stroke="#2a1d0e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="14" cy="15" r="8"/><path d="M22 15 H54 M45 15 V24 M53 15 V22"/></g>
-    <g fill="none" stroke="#f2c230" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <g fill="none" style="stroke:var(--teinte,#f2c230)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="14" cy="15" r="8"/><path d="M22 15 H54 M45 15 V24 M53 15 V22"/></g></symbol>
   <symbol id="chaine" viewBox="0 0 120 40">
     <g fill="none" stroke-linecap="round">
@@ -134,7 +151,7 @@ function injecterDefs() {
 }
 
 // Une face de carte. c = { valeur, couleur }, w = largeur en pixels (facultatif)
-// Pas de coins : un gros chiffre (ou lettre) au centre. Roi = R, Dame = D, Valet = J.
+// Valeur en petit dans 2 coins (haut gauche, bas droite) et en gros au centre. Roi = R, Dame = D, Valet = J.
 const LETTRES = { 1: 'A', 11: 'J', 12: 'D', 13: 'R' };
 function elCarte(c, w) {
   const d = document.createElement('div');
@@ -147,7 +164,7 @@ function elCarte(c, w) {
   }
   d.className = 'card face' + (COULEURS[c.couleur].rouge ? ' red' : '');
   const r = LETTRES[c.valeur] || String(c.valeur);
-  d.innerHTML = `<span class="mid num${r === '10' ? ' dix' : ''}">${r}</span>`;
+  d.innerHTML = `<span class="idx hg">${r}</span><span class="mid num${r === '10' ? ' dix' : ''}">${r}</span><span class="idx bd">${r}</span>`;
   return d;
 }
 
@@ -162,10 +179,11 @@ function elDos(w) {
 
 
 // Petites icônes posées par-dessus une carte du tableau : 'chaine' | 'cadenas' | 'cle'
-function elIcone(nom) {
+function elIcone(nom, teinte) {
   const e = document.createElement('div');
   e.className = 'ico ' + nom;
-  const vb = { chaine: '0 0 120 40', cadenas: '0 0 40 48', cle: '0 0 60 30' }[nom];
+  if (teinte !== undefined) e.style.setProperty('--teinte', TEINTES[teinte % TEINTES.length]);
+  const vb = { chaine: '0 0 120 40', cadenas: '0 0 40 48', verrou: '0 0 50 70', cle: '0 0 60 30' }[nom];
   e.innerHTML = `<svg viewBox="${vb}" aria-hidden="true"><use href="#${nom}"/></svg>`;
   return e;
 }
