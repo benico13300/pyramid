@@ -109,12 +109,6 @@ function injecterDefs() {
       <line x1="9" y1="61" x2="41" y2="9" stroke="#b9c2cc" stroke-width="3"/>
       <line x1="9" y1="61" x2="41" y2="9" stroke="#eef2f6" stroke-width=".9"/>
     </g>
-    <g fill="none" stroke-linecap="round">
-      <g stroke="#1b2430" stroke-width="3.6"><ellipse cx="22" cy="5" rx="3.6" ry="2.1"/><ellipse cx="28.5" cy="5" rx="3.6" ry="2.1"/><ellipse cx="35" cy="5" rx="3.6" ry="2.1"/>
-        <ellipse cx="14" cy="65" rx="3.6" ry="2.1"/><ellipse cx="20.5" cy="65" rx="3.6" ry="2.1"/><ellipse cx="27" cy="65" rx="3.6" ry="2.1"/></g>
-      <g stroke="#cfd6de" stroke-width="1.7"><ellipse cx="22" cy="5" rx="3.6" ry="2.1"/><ellipse cx="28.5" cy="5" rx="3.6" ry="2.1"/><ellipse cx="35" cy="5" rx="3.6" ry="2.1"/>
-        <ellipse cx="14" cy="65" rx="3.6" ry="2.1"/><ellipse cx="20.5" cy="65" rx="3.6" ry="2.1"/><ellipse cx="27" cy="65" rx="3.6" ry="2.1"/></g>
-    </g>
     <g id="vcad"><rect x="37" y="4" width="10" height="13" rx="2" fill="#7f8891" stroke="#1b2430" stroke-width="1.6"/>
       <rect x="38" y="5" width="3" height="11" fill="#b6bec7"/><circle cx="43" cy="9.5" r="2" fill="#1b2430"/><rect x="42.2" y="10" width="1.6" height="4.2" fill="#1b2430"/></g>
     <g transform="translate(-33 49)"><use href="#vcad"/></g>
