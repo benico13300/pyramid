@@ -57,8 +57,8 @@ h1 small{font-size:.7em;opacity:.7;font-weight:400}
 .ico{position:absolute;pointer-events:none;filter:drop-shadow(0 1px 2px #000a)}
 .ico svg{display:block;width:100%;height:auto}
 .ico.chaine{right:2%;top:2%;width:62%}
-.ico.verrou{left:0;top:0;width:100%;height:100%}
-.ico.verrou svg{width:100%;height:100%;opacity:.93}
+.ico.verrou,.ico.barre{left:0;top:0;width:100%;height:100%}
+.ico.verrou svg,.ico.barre svg{width:100%;height:100%;opacity:.93}
 .ico.cadenas{right:4%;top:2%;width:34%}
 .ico.cle{right:3%;top:4%;width:44%;transform:rotate(-20deg)}
 .t.bloquee .idx,.t.bloquee .mid,.t.bloquee .art{opacity:.55}

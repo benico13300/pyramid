@@ -102,7 +102,7 @@
       if (visible && aide && partie.jouable(c.id)) el.classList.add('jouable');
       if (c.cadenas) el.appendChild(elIcone('verrou', c.teinte ?? 0));
       if (c.cle && visible) el.appendChild(elIcone('cle', c.teinte ?? 0));
-      if (c.chaine) el.appendChild(elIcone('chaine'));
+      if (c.chaine) el.appendChild(elIcone('barre'));
       if (visible && partie.blocage(c.id)) el.classList.add('bloquee');
       if (visible && c.bonus) el.classList.add('bonus-' + c.bonus);
       plateau.appendChild(el);

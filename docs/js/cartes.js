@@ -113,6 +113,13 @@ function injecterDefs() {
       <rect x="38" y="5" width="3" height="11" fill="#b6bec7"/><circle cx="43" cy="9.5" r="2" fill="#1b2430"/><rect x="42.2" y="10" width="1.6" height="4.2" fill="#1b2430"/></g>
     <g transform="translate(-33 49)"><use href="#vcad"/></g>
   </symbol>
+  <symbol id="barre" viewBox="0 0 50 70">
+    <line x1="9" y1="61" x2="41" y2="9" stroke="#1b2430" stroke-width="7.6"/>
+    <line x1="9" y1="61" x2="41" y2="9" stroke="#8a929c" stroke-width="5.8"/>
+    <line x1="9" y1="61" x2="41" y2="9" stroke="#c4cbd3" stroke-width="3"/>
+    <line x1="9" y1="61" x2="41" y2="9" stroke="#f1f4f7" stroke-width=".9"/>
+    <circle cx="41" cy="9" r="3.2" fill="#7f8891" stroke="#1b2430" stroke-width="1.4"/><circle cx="9" cy="61" r="3.2" fill="#7f8891" stroke="#1b2430" stroke-width="1.4"/>
+  </symbol>
   <symbol id="cle" viewBox="0 0 60 30">
     <g fill="none" stroke="#2a1d0e" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="14" cy="15" r="8"/><path d="M22 15 H54 M45 15 V24 M53 15 V22"/></g>
@@ -177,7 +184,7 @@ function elIcone(nom, teinte) {
   const e = document.createElement('div');
   e.className = 'ico ' + nom;
   if (teinte !== undefined) e.style.setProperty('--teinte', TEINTES[teinte % TEINTES.length]);
-  const vb = { chaine: '0 0 120 40', cadenas: '0 0 40 48', verrou: '0 0 50 70', cle: '0 0 60 30' }[nom];
+  const vb = { chaine: '0 0 120 40', cadenas: '0 0 40 48', verrou: '0 0 50 70', barre: '0 0 50 70', cle: '0 0 60 30' }[nom];
   e.innerHTML = `<svg viewBox="${vb}" aria-hidden="true"><use href="#${nom}"/></svg>`;
   return e;
 }
